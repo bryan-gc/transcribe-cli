@@ -1,0 +1,40 @@
+{
+  "name": "trancriber",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.tsx",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "format": "prettier --write 'src/**/*.{ts,tsx}'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx}'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "@types/node": "^25.7.0",
+    "dotenv": "^17.4.2",
+    "ink": "^7.0.3",
+    "node-record-lpcm16": "^1.0.1",
+    "openai": "^6.37.0",
+    "react": "^19.2.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.8.3",
+    "tsx": "^4.22.0",
+    "typescript-eslint": "^8.59.3"
+  }
+}
