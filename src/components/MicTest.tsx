@@ -5,7 +5,7 @@ import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { playAudio, stopPlayback } from '../audio/audioPlayer.js';
 import type { MicDevice } from '../audio/micDevices.js';
-import { DIR, EXT, RECORDING_TICK_MS } from '../constants.js';
+import { RECORDING_TICK_MS, ActionHotkey, TestStatus, PATHS } from '../constants';
 
 interface MicTestProps {
   mic: MicDevice;
@@ -13,15 +13,6 @@ interface MicTestProps {
   onCancel: () => void;
 }
 
-export enum TestStatus {
-  IDLE = 'idle',
-  RECORDING = 'recording',
-  SAVING = 'saving',
-  RECORDED = 'recorded',
-  PLAYING = 'playing',
-}
-
-const TEST_FILE = path.resolve(process.cwd(), DIR.TMP, `mic-test${EXT.AUDIO}`);
 const AUTO_STOP_SECS = 5;
 
 export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
@@ -54,11 +45,11 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   function startRecording(): void {
     if (status === TestStatus.RECORDING) return;
     try {
-      const tmpDir = path.dirname(TEST_FILE);
+      const tmpDir = path.dirname(PATHS.TEST_FILE);
       if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
       recorderRef.current.setDevice(mic.id);
-      recorderRef.current.start(TEST_FILE);
+      recorderRef.current.start(PATHS.TEST_FILE);
       setStatus(TestStatus.RECORDING);
       setElapsed(0);
       setErrorText('');
@@ -87,14 +78,14 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   }, []);
 
   async function handlePlayback(): Promise<void> {
-    if (!hasRecording || !fs.existsSync(TEST_FILE)) {
+    if (!hasRecording || !fs.existsSync(PATHS.TEST_FILE)) {
       setErrorText('No test recording found. Record first.');
       return;
     }
     setStatus(TestStatus.PLAYING);
     setErrorText('');
     try {
-      await playAudio(TEST_FILE);
+      await playAudio(PATHS.TEST_FILE);
     } catch (e: unknown) {
       setErrorText(`Playback error: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -110,31 +101,31 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   useInput((input, key) => {
     const k = input.toLowerCase();
 
-    if (key.escape || k === 'c') {
+    if (key.escape || k === ActionHotkey.CANCEL_C) {
       onCancel();
       return;
     }
 
     if (status === TestStatus.IDLE || status === TestStatus.RECORDED) {
-      if (k === 'r') {
+      if (k === ActionHotkey.RECORD) {
         startRecording();
         return;
       }
-      if (k === 'p' && hasRecording) {
+      if (k === ActionHotkey.PLAYBACK && hasRecording) {
         handlePlayback();
         return;
       }
-      if (k === 'b' || key.return) {
+      if (k === ActionHotkey.CONFIRM || key.return) {
         onConfirm();
         return;
       }
     }
 
-    if (status === TestStatus.RECORDING && k === 's') {
+    if (status === TestStatus.RECORDING && k === ActionHotkey.STOP) {
       stopRecording();
       return;
     }
-    if (status === TestStatus.PLAYING && k === 's') {
+    if (status === TestStatus.PLAYING && k === ActionHotkey.STOP) {
       handleStopPlayback();
       return;
     }
@@ -152,11 +143,11 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
       case TestStatus.SAVING:
         return <Text color="yellow">💾 Saving audio file, please wait...</Text>;
       case TestStatus.PLAYING:
-        return <Text color="green">🔊 Playing back... press [s] to stop</Text>;
+        return <Text color="green">🔊 Playing back... press [{ActionHotkey.STOP}] to stop</Text>;
       case TestStatus.RECORDED:
         return <Text color="green">⏹️ Test recorded. Ready to play back or confirm.</Text>;
       default:
-        return <Text dimColor>Press [r] to start a test recording.</Text>;
+        return <Text dimColor>Press [{ActionHotkey.RECORD}] to start a test recording.</Text>;
     }
   };
 
@@ -164,7 +155,7 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   const actions = (): React.ReactElement => {
     switch (status) {
       case TestStatus.RECORDING:
-        return <Text color="yellow">[s] Stop recording early</Text>;
+        return <Text color="yellow">[{ActionHotkey.STOP}] Stop recording early</Text>;
       case TestStatus.SAVING:
         return (
           <Text color="yellow" dimColor>
@@ -172,18 +163,19 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
           </Text>
         );
       case TestStatus.PLAYING:
-        return <Text color="yellow">[s] Stop playback</Text>;
+        return <Text color="yellow">[{ActionHotkey.STOP}] Stop playback</Text>;
       default:
         return (
           <Box flexDirection="column">
             <Text color="cyan">
-              [r] {status === TestStatus.RECORDED ? 'Record Again' : 'Record Test'}
+              [{ActionHotkey.RECORD}]{' '}
+              {status === TestStatus.RECORDED ? 'Record Again' : 'Record Test'}
               {'  '}
               <Text dimColor>(auto-stops at {AUTO_STOP_SECS}s)</Text>
             </Text>
-            {hasRecording && <Text color="cyan">[p] Play Back</Text>}
-            <Text color="green">[b] Confirm — use this microphone</Text>
-            <Text color="red">[c] Cancel — choose a different mic</Text>
+            {hasRecording && <Text color="cyan">[{ActionHotkey.PLAYBACK}] Play Back</Text>}
+            <Text color="green">[{ActionHotkey.CONFIRM}] Confirm — use this microphone</Text>
+            <Text color="red">[{ActionHotkey.CANCEL_C}] Cancel — choose a different mic</Text>
           </Box>
         );
     }
@@ -214,7 +206,9 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
       )}
 
       <Box marginTop={1}>
-        <Text dimColor>Esc/[c] cancel · [b]/Enter confirm</Text>
+        <Text dimColor>
+          Esc/[{ActionHotkey.CANCEL_C}] cancel · [{ActionHotkey.CONFIRM}]/Enter confirm
+        </Text>
       </Box>
     </Box>
   );

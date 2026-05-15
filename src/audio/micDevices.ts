@@ -1,5 +1,14 @@
 import { execSync } from 'child_process';
 import os from 'os';
+import {
+  DEFAULT_DEVICE_ID,
+  DEFAULT_DEVICE_LABEL,
+  Platform,
+  Cmd,
+  Encoding,
+  AlsaDevice,
+  ALSA_VIRTUAL_DEVICES,
+} from '../constants';
 
 export interface MicDevice {
   id: string; // Device identifier passed to the recorder
@@ -21,59 +30,77 @@ export function listMicDevices(): MicDevice[] {
   const platform = os.platform();
 
   try {
-    if (platform === 'linux') {
+    if (platform === Platform.LINUX) {
       return listLinuxDevices();
     }
-    if (platform === 'darwin') {
+    if (platform === Platform.DARWIN) {
       return listMacDevices();
     }
   } catch {
     // If detection fails for any reason, fall back silently
   }
 
-  return [{ id: 'default', label: 'Default Device' }];
+  return [{ id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL }];
 }
 
-// ─── Linux (ALSA via arecord) ─────────────────────────────────────────────────
+// ─── Linux (ALSA via arecord / PipeWire via pw-dump) ──────────────────────────
 function listLinuxDevices(): MicDevice[] {
-  const raw = execSync('arecord -L 2>/dev/null', { encoding: 'utf-8' });
-  const devices: MicDevice[] = [{ id: 'default', label: 'Default Device' }];
+  const devices: MicDevice[] = [{ id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL }];
 
-  // Top-level lines (no leading whitespace) are device IDs.
-  // Lines starting with spaces are descriptions → skip them.
-  const topLevel = raw
-    .split('\n')
-    .filter((line) => line.trim() && !line.startsWith(' ') && !line.startsWith('\t'));
+  // 1. Try PipeWire (pw-dump) for user-friendly names matching Ubuntu settings
+  try {
+    const rawPw = execSync(`${Cmd.PW_DUMP} 2>/dev/null`, { encoding: Encoding.UTF8 });
+    const nodes = JSON.parse(rawPw);
 
-  // Exclude purely virtual/routing devices that cannot capture real audio
-  const SKIP = new Set([
-    'null',
-    'lavrate',
-    'samplerate',
-    'speexrate',
-    'jack',
-    'oss',
-    'speex',
-    'upmix',
-    'vdownmix',
-  ]);
+    let foundPwDevices = false;
+    for (const node of nodes) {
+      const props = node?.info?.props;
+      if (props && props['media.class'] === 'Audio/Source') {
+        const id = props['node.name'];
+        const label = props['node.description'] || id;
+        if (id) {
+          devices.push({ id, label });
+          foundPwDevices = true;
+        }
+      }
+    }
 
-  for (const id of topLevel) {
-    if (SKIP.has(id) || id === 'default') continue;
-    devices.push({ id, label: formatAlsaLabel(id) });
+    if (foundPwDevices) {
+      return devices;
+    }
+  } catch {
+    // Fallback to arecord if pw-dump fails or isn't installed
+  }
+
+  // 2. Fallback to ALSA (arecord -L)
+  try {
+    const raw = execSync(`${Cmd.ARECORD} -L 2>/dev/null`, { encoding: Encoding.UTF8 });
+
+    // Top-level lines (no leading whitespace) are device IDs.
+    // Lines starting with spaces are descriptions → skip them.
+    const topLevel = raw
+      .split('\n')
+      .filter((line) => line.trim() && !line.startsWith(' ') && !line.startsWith('\t'));
+
+    for (const id of topLevel) {
+      if (ALSA_VIRTUAL_DEVICES.has(id) || id === DEFAULT_DEVICE_ID) continue;
+      devices.push({ id, label: formatAlsaLabel(id) });
+    }
+  } catch {
+    // Ignore error
   }
 
   return devices;
 }
 
 function formatAlsaLabel(id: string): string {
-  if (id === 'pulse') return 'PulseAudio';
-  if (id === 'pipewire') return 'PipeWire';
+  if (id === AlsaDevice.PULSE) return 'PulseAudio';
+  if (id === AlsaDevice.PIPEWIRE) return 'PipeWire';
 
   // plughw:CARD=sofhdadsp,DEV=0  →  "sofhdadsp  DEV 0 (plug)"
   const hwMatch = id.match(/^(plughw|hw):CARD=([^,]+),DEV=(\d+)$/);
   if (hwMatch) {
-    const plug = hwMatch[1] === 'plughw' ? ' (plug)' : '';
+    const plug = hwMatch[1] === AlsaDevice.PLUGHW ? ' (plug)' : '';
     return `${hwMatch[2]}  DEV ${hwMatch[3]}${plug}`;
   }
 
@@ -90,8 +117,10 @@ function formatAlsaLabel(id: string): string {
 
 // ─── macOS (system_profiler) ──────────────────────────────────────────────────
 function listMacDevices(): MicDevice[] {
-  const raw = execSync('system_profiler SPAudioDataType 2>/dev/null', { encoding: 'utf-8' });
-  const devices: MicDevice[] = [{ id: 'default', label: 'Default Device' }];
+  const raw = execSync(`${Cmd.SYSTEM_PROFILER} SPAudioDataType 2>/dev/null`, {
+    encoding: Encoding.UTF8,
+  });
+  const devices: MicDevice[] = [{ id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL }];
 
   // system_profiler outputs sections like:
   //     Built-in Microphone:
@@ -110,5 +139,5 @@ function listMacDevices(): MicDevice[] {
     }
   }
 
-  return devices.length > 1 ? devices : [{ id: 'default', label: 'Default Device' }];
+  return devices.length > 1 ? devices : [{ id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL }];
 }

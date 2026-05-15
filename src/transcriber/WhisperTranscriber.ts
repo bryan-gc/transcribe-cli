@@ -2,8 +2,7 @@ import fs from 'fs';
 import OpenAI from 'openai';
 import type { ITranscriber } from './ITranscriber.js';
 import { config } from '../config/env.js';
-import { LanguageCode } from './LanguageEnum.js';
-import { TranscriptionFormat, WHISPER_MODEL } from './TranscriptionFormat.js';
+import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants';
 
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;

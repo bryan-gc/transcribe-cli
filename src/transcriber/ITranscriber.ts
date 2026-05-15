@@ -1,5 +1,4 @@
-import type { LanguageCode } from './LanguageEnum.js';
-import type { TranscriptionFormat } from './TranscriptionFormat.js';
+import type { LanguageCode, TranscriptionFormat } from '../constants';
 
 export interface ITranscriber {
   /**

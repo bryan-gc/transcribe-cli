@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Select } from '@inkjs/ui';
-import { BACK_OPTION_VALUE } from '../constants.js';
+import { BACK_OPTION_VALUE, ActionHotkey } from '../constants';
 
 interface PickerOption {
   label: string;
@@ -17,7 +17,7 @@ interface PickerProps {
 
 export function Picker({ title, options, onSelect, onCancel }: PickerProps) {
   useInput((input, key) => {
-    if (key.escape || input.toLowerCase() === 'q') {
+    if (key.escape || input.toLowerCase() === ActionHotkey.CANCEL_Q) {
       onCancel();
     }
   });

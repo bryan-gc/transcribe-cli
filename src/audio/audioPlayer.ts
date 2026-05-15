@@ -2,12 +2,13 @@ import type { ChildProcess } from 'child_process';
 import { spawn } from 'child_process';
 import { execSync } from 'child_process';
 import os from 'os';
+import { Platform, Cmd, Signal, ProcessEvent, StdioOption } from '../constants';
 
 let playProcess: ChildProcess | null = null;
 
 export function stopPlayback() {
   if (playProcess) {
-    playProcess.kill('SIGTERM');
+    playProcess.kill(Signal.SIGTERM);
     playProcess = null;
   }
 }
@@ -21,23 +22,23 @@ export function playAudio(filepath: string): Promise<void> {
 
   const platform = os.platform();
   const getCmdArgs = (): { cmd: string; args: string[] } => {
-    if (platform === 'darwin') {
-      return { cmd: 'afplay', args: [filepath] };
+    if (platform === Platform.DARWIN) {
+      return { cmd: Cmd.AFPLAY, args: [filepath] };
     }
     // Try sox's 'play' first (already installed for recording)
     try {
-      execSync('which play', { stdio: 'ignore' });
-      return { cmd: 'play', args: [filepath] };
+      execSync(`which ${Cmd.PLAY}`, { stdio: StdioOption.IGNORE });
+      return { cmd: Cmd.PLAY, args: [filepath] };
     } catch {
-      return { cmd: 'aplay', args: [filepath] };
+      return { cmd: Cmd.APLAY, args: [filepath] };
     }
   };
 
   const { cmd, args } = getCmdArgs();
 
   return new Promise((resolve, reject) => {
-    playProcess = spawn(cmd, args, { stdio: 'ignore' });
-    playProcess.on('close', (code) => {
+    playProcess = spawn(cmd, args, { stdio: StdioOption.IGNORE });
+    playProcess.on(ProcessEvent.CLOSE, (code) => {
       playProcess = null;
       if (code === null || code === 0) {
         resolve();
@@ -45,7 +46,7 @@ export function playAudio(filepath: string): Promise<void> {
       }
       reject(new Error(`Playback exited with code ${code}`));
     });
-    playProcess.on('error', (err) => {
+    playProcess.on(ProcessEvent.ERROR, (err) => {
       playProcess = null;
       reject(err);
     });

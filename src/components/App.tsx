@@ -8,48 +8,40 @@ import { AudioRecorder } from '../audio/recorder.js';
 import { listMicDevices } from '../audio/micDevices.js';
 import type { MicDevice } from '../audio/micDevices.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
-import { LanguageCode, LANGUAGE_NAMES, AVAILABLE_LANGUAGES } from '../transcriber/LanguageEnum.js';
-import { TranscriptionFormat } from '../transcriber/TranscriptionFormat.js';
 import { extractTextFromSrt } from '../utils/srtParser.js';
 import { copyTextToClipboard } from '../utils/clipboard.js';
 import { config } from '../config/env.js';
-import { DIR, EXT, DEFAULT_DEVICE_ID } from '../constants.js';
-
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
-export enum ViewMode {
-  MAIN = 'MAIN',
-  LANGUAGES = 'LANGUAGES',
-  GLOSSARIES = 'GLOSSARIES',
-  MICROPHONES = 'MICROPHONES',
-  MIC_TEST = 'MIC_TEST',
-}
-
-export enum MenuAction {
-  RECORD = 'r',
-  PAUSE = 'p',
-  STOP = 's',
-  TRANSCRIBE = 't',
-  CHANGE_LANGUAGE = 'l',
-  CHANGE_GLOSSARY = 'g',
-  CHANGE_MICROPHONE = 'm',
-  TOGGLE_CLIPBOARD = 'c',
-  QUIT = 'q',
-}
+import {
+  DIR,
+  EXT,
+  DEFAULT_DEVICE_ID,
+  DEFAULT_DEVICE_LABEL,
+  NONE_OPTION_VALUE,
+  HOTKEY_EXIT,
+  Encoding,
+  LanguageCode,
+  LANGUAGE_NAMES,
+  AVAILABLE_LANGUAGES,
+  TranscriptionFormat,
+  ViewMode,
+  MenuAction,
+  PATHS,
+} from '../constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GLOSSARIES_DIR = path.resolve(process.cwd(), DIR.GLOSSARIES);
-
 const MAIN_OPTIONS: { id: MenuAction; label: string }[] = [
-  { id: MenuAction.RECORD, label: 'Record [r]' },
-  { id: MenuAction.PAUSE, label: 'Pause [p]' },
-  { id: MenuAction.STOP, label: 'Stop [s]' },
-  { id: MenuAction.TRANSCRIBE, label: 'Transcribe [t]' },
-  { id: MenuAction.CHANGE_LANGUAGE, label: 'Change Language [l]' },
-  { id: MenuAction.CHANGE_GLOSSARY, label: 'Change Glossary [g]' },
-  { id: MenuAction.CHANGE_MICROPHONE, label: 'Change Microphone [m]' },
-  { id: MenuAction.QUIT, label: 'Quit [q]' },
+  { id: MenuAction.RECORD, label: `Record [${MenuAction.RECORD}]` },
+  { id: MenuAction.PAUSE, label: `Pause [${MenuAction.PAUSE}]` },
+  { id: MenuAction.STOP, label: `Stop [${MenuAction.STOP}]` },
+  { id: MenuAction.TRANSCRIBE, label: `Transcribe [${MenuAction.TRANSCRIBE}]` },
+  { id: MenuAction.CHANGE_LANGUAGE, label: `Change Language [${MenuAction.CHANGE_LANGUAGE}]` },
+  { id: MenuAction.CHANGE_GLOSSARY, label: `Change Glossary [${MenuAction.CHANGE_GLOSSARY}]` },
+  {
+    id: MenuAction.CHANGE_MICROPHONE,
+    label: `Change Microphone [${MenuAction.CHANGE_MICROPHONE}]`,
+  },
+  { id: MenuAction.QUIT, label: `Quit [${MenuAction.QUIT}]` },
 ];
 
 const VALID_ACTION_KEYS = new Set(Object.values(MenuAction) as string[]);
@@ -57,17 +49,17 @@ const VALID_ACTION_KEYS = new Set(Object.values(MenuAction) as string[]);
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function loadGlossaryFiles(): string[] {
-  if (!fs.existsSync(GLOSSARIES_DIR)) fs.mkdirSync(GLOSSARIES_DIR, { recursive: true });
+  if (!fs.existsSync(PATHS.GLOSSARIES_DIR)) fs.mkdirSync(PATHS.GLOSSARIES_DIR, { recursive: true });
   return fs
-    .readdirSync(GLOSSARIES_DIR)
+    .readdirSync(PATHS.GLOSSARIES_DIR)
     .filter((f) => f.endsWith(EXT.GLOSSARY))
     .sort();
 }
 
 function readGlossaryContent(filename: string): string | undefined {
   if (!filename) return undefined;
-  const filepath = path.join(GLOSSARIES_DIR, filename);
-  const content = fs.existsSync(filepath) ? fs.readFileSync(filepath, 'utf-8').trim() : '';
+  const filepath = path.join(PATHS.GLOSSARIES_DIR, filename);
+  const content = fs.existsSync(filepath) ? fs.readFileSync(filepath, Encoding.UTF8).trim() : '';
   return content || undefined;
 }
 
@@ -114,7 +106,7 @@ export function App() {
   const [activeGlossary, setActiveGlossary] = useState(initialGlossaries[0] ?? '');
 
   const initialMics = listMicDevices();
-  const fallbackMic: MicDevice = { id: DEFAULT_DEVICE_ID, label: 'Default Device' };
+  const fallbackMic: MicDevice = { id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL };
   const [activeMic, setActiveMic] = useState<MicDevice>(initialMics[0] ?? fallbackMic);
   const [pendingMic, setPendingMic] = useState<MicDevice>(initialMics[0] ?? fallbackMic);
   const [micDevices, setMicDevices] = useState<MicDevice[]>(initialMics);
@@ -223,9 +215,9 @@ export function App() {
             );
 
             setStatusText('⏳ Formatting text and saving files...');
-            fs.writeFileSync(currentSrtPath, srtContent, 'utf-8');
+            fs.writeFileSync(currentSrtPath, srtContent, Encoding.UTF8);
             const cleanText = extractTextFromSrt(srtContent);
-            fs.writeFileSync(currentTextPath, cleanText, 'utf-8');
+            fs.writeFileSync(currentTextPath, cleanText, Encoding.UTF8);
             setTranscriptionResult(cleanText);
 
             if (clipboardEnabled) {
@@ -279,7 +271,7 @@ export function App() {
         if (action) handleAction(action);
         return;
       }
-      if (key.ctrl && input === 'c') {
+      if (key.ctrl && input === HOTKEY_EXIT) {
         if (isRecording) recorder.stop().catch(() => {});
         exit();
         return;
@@ -300,7 +292,7 @@ export function App() {
   }));
 
   const glossaryOptions = [
-    { label: '(none)', value: '__none__' },
+    { label: '(none)', value: NONE_OPTION_VALUE },
     ...glossaryFiles.map((f) => ({ label: path.basename(f, EXT.GLOSSARY), value: f })),
   ];
 
@@ -383,7 +375,7 @@ export function App() {
           title="Select Glossary"
           options={glossaryOptions}
           onSelect={(value) => {
-            const finalValue = value === '__none__' ? '' : value;
+            const finalValue = value === NONE_OPTION_VALUE ? '' : value;
             setActiveGlossary(finalValue);
             setStatusText(
               `Glossary changed to: ${finalValue ? path.basename(finalValue, EXT.GLOSSARY) : 'none'}.`,
