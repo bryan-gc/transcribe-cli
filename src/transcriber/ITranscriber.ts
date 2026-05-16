@@ -1,4 +1,4 @@
-import type { LanguageCode, TranscriptionFormat } from '../constants';
+import type { LanguageCode, TranscriptionFormat } from '../constants.js';
 
 export interface ITranscriber {
   /**

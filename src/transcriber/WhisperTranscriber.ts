@@ -1,15 +1,14 @@
 import fs from 'fs';
 import OpenAI from 'openai';
 import type { ITranscriber } from './ITranscriber.js';
-import { config } from '../config/env.js';
-import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants';
+import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants.js';
 
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
 
-  constructor() {
+  constructor(apiKey: string) {
     this.openai = new OpenAI({
-      apiKey: config.OPENAI_API_KEY,
+      apiKey,
     });
   }
 

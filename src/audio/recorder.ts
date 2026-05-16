@@ -13,7 +13,7 @@ import {
   StdioOption,
   StreamEvent,
   ProcessEvent,
-} from '../constants';
+} from '../constants.js';
 
 export class AudioRecorder {
   private cp: ChildProcess | null = null;

@@ -8,7 +8,7 @@ import {
   Encoding,
   AlsaDevice,
   ALSA_VIRTUAL_DEVICES,
-} from '../constants';
+} from '../constants.js';
 
 export interface MicDevice {
   id: string; // Device identifier passed to the recorder

@@ -10,7 +10,7 @@ import type { MicDevice } from '../audio/micDevices.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
 import { extractTextFromSrt } from '../utils/srtParser.js';
 import { copyTextToClipboard } from '../utils/clipboard.js';
-import { config } from '../config/env.js';
+import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import {
   DIR,
   EXT,
@@ -25,8 +25,8 @@ import {
   TranscriptionFormat,
   ViewMode,
   MenuAction,
-  PATHS,
-} from '../constants';
+  getPaths,
+} from '../constants.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,27 +48,28 @@ const VALID_ACTION_KEYS = new Set(Object.values(MenuAction) as string[]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function loadGlossaryFiles(): string[] {
-  if (!fs.existsSync(PATHS.GLOSSARIES_DIR)) fs.mkdirSync(PATHS.GLOSSARIES_DIR, { recursive: true });
+function loadGlossaryFiles(basePath: string): string[] {
+  const dir = getPaths(basePath).GLOSSARIES_DIR;
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return fs
-    .readdirSync(PATHS.GLOSSARIES_DIR)
+    .readdirSync(dir)
     .filter((f) => f.endsWith(EXT.GLOSSARY))
     .sort();
 }
 
-function readGlossaryContent(filename: string): string | undefined {
+function readGlossaryContent(basePath: string, filename: string): string | undefined {
   if (!filename) return undefined;
-  const filepath = path.join(PATHS.GLOSSARIES_DIR, filename);
+  const filepath = path.join(getPaths(basePath).GLOSSARIES_DIR, filename);
   const content = fs.existsSync(filepath) ? fs.readFileSync(filepath, Encoding.UTF8).trim() : '';
   return content || undefined;
 }
 
-function getTimestampPaths() {
+function getTimestampPaths(basePath: string) {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   const folder = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const base = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-  const tmpDir = path.resolve(process.cwd(), DIR.TMP, folder);
+  const tmpDir = path.resolve(basePath, DIR.TMP, folder);
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   return {
     audioPath: path.join(tmpDir, `${base}${EXT.AUDIO}`),
@@ -79,7 +80,7 @@ function getTimestampPaths() {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function App() {
+export function App({ appConfig }: { appConfig: AppConfig }) {
   const { exit } = useApp();
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -97,24 +98,31 @@ export function App() {
   const [currentTextPath, setCurrentTextPath] = useState('');
 
   const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(
-    AVAILABLE_LANGUAGES.includes(config.DEFAULT_LANGUAGE as LanguageCode)
-      ? (config.DEFAULT_LANGUAGE as LanguageCode)
+    AVAILABLE_LANGUAGES.includes(appConfig.selectedLanguage)
+      ? appConfig.selectedLanguage
       : LanguageCode.ENGLISH,
   );
 
-  const initialGlossaries = loadGlossaryFiles();
+  const initialGlossaries = loadGlossaryFiles(appConfig.basePath);
   const [activeGlossary, setActiveGlossary] = useState(initialGlossaries[0] ?? '');
 
   const initialMics = listMicDevices();
   const fallbackMic: MicDevice = { id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL };
-  const [activeMic, setActiveMic] = useState<MicDevice>(initialMics[0] ?? fallbackMic);
-  const [pendingMic, setPendingMic] = useState<MicDevice>(initialMics[0] ?? fallbackMic);
+  const savedMic = initialMics.find((m) => m.id === appConfig.selectedMicrophone);
+  const [activeMic, setActiveMic] = useState<MicDevice>(savedMic ?? fallbackMic);
+  const [pendingMic, setPendingMic] = useState<MicDevice>(savedMic ?? fallbackMic);
   const [micDevices, setMicDevices] = useState<MicDevice[]>(initialMics);
   const [glossaryFiles, setGlossaryFiles] = useState<string[]>(initialGlossaries);
 
+  const saveConfig = (updates: Partial<AppConfig>) => {
+    const newConfig = { ...appConfig, ...updates };
+    ConfigManager.save(newConfig);
+    Object.assign(appConfig, updates); // mutate for current session ref
+  };
+
   // ── Refs ───────────────────────────────────────────────────────────────────
   const recorderRef = useRef(new AudioRecorder());
-  const transcriber = useRef(new WhisperTranscriber());
+  const transcriber = useRef(new WhisperTranscriber(appConfig.apiKey));
   const recorder = recorderRef.current;
   try {
     recorder.setDevice(activeMic.id);
@@ -128,7 +136,7 @@ export function App() {
       switch (actionId) {
         case MenuAction.RECORD:
           if (!isRecording) {
-            const p = getTimestampPaths();
+            const p = getTimestampPaths(appConfig.basePath);
             setCurrentAudioPath(p.audioPath);
             setCurrentSrtPath(p.srtPath);
             setCurrentTextPath(p.textPath);
@@ -174,7 +182,7 @@ export function App() {
           break;
 
         case MenuAction.CHANGE_GLOSSARY:
-          setGlossaryFiles(loadGlossaryFiles());
+          setGlossaryFiles(loadGlossaryFiles(appConfig.basePath));
           setViewMode(ViewMode.GLOSSARIES);
           break;
 
@@ -200,7 +208,7 @@ export function App() {
             return;
           }
 
-          const glossaryPrompt = readGlossaryContent(activeGlossary);
+          const glossaryPrompt = readGlossaryContent(appConfig.basePath, activeGlossary);
           setIsTranscribing(true);
           setStatusText(
             `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}) - Initializing...`,
@@ -252,6 +260,7 @@ export function App() {
       clipboardEnabled,
       recorder,
       exit,
+      appConfig.basePath,
     ],
   );
 
@@ -305,7 +314,7 @@ export function App() {
   return (
     <Box flexDirection="column" padding={1}>
       {/* ── Header ── */}
-      <Text bold>{'=== CLI Audio Transcriber ==='}</Text>
+      <Text bold>{'=== transcribe-cli ==='}</Text>
       <Box flexDirection="column" marginTop={1} marginBottom={1}>
         <Text>
           Status: <Text color="yellow">{statusText}</Text>
@@ -362,6 +371,7 @@ export function App() {
           options={languageOptions}
           onSelect={(value) => {
             setActiveLanguage(value as LanguageCode);
+            saveConfig({ selectedLanguage: value as LanguageCode });
             setStatusText(`Language changed to ${LANGUAGE_NAMES[value as LanguageCode]}.`);
             setViewMode(ViewMode.MAIN);
           }}
@@ -404,8 +414,10 @@ export function App() {
       {viewMode === ViewMode.MIC_TEST && (
         <MicTest
           mic={pendingMic}
+          basePath={appConfig.basePath}
           onConfirm={() => {
             setActiveMic(pendingMic);
+            saveConfig({ selectedMicrophone: pendingMic.id });
             setStatusText(`Microphone set to: ${pendingMic.label}.`);
             setViewMode(ViewMode.MAIN);
           }}

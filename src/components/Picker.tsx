@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Select } from '@inkjs/ui';
-import { BACK_OPTION_VALUE, ActionHotkey } from '../constants';
+import { BACK_OPTION_VALUE, ActionHotkey } from '../constants.js';
 
 interface PickerOption {
   label: string;

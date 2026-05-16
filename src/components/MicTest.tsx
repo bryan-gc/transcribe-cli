@@ -5,22 +5,24 @@ import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { playAudio, stopPlayback } from '../audio/audioPlayer.js';
 import type { MicDevice } from '../audio/micDevices.js';
-import { RECORDING_TICK_MS, ActionHotkey, TestStatus, PATHS } from '../constants';
+import { RECORDING_TICK_MS, ActionHotkey, TestStatus, getPaths } from '../constants.js';
 
 interface MicTestProps {
   mic: MicDevice;
+  basePath: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 const AUTO_STOP_SECS = 5;
 
-export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
+export function MicTest({ mic, basePath, onConfirm, onCancel }: MicTestProps) {
   const [status, setStatus] = useState<TestStatus>(TestStatus.IDLE);
   const [hasRecording, setHasRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [errorText, setErrorText] = useState('');
 
+  const testFilePath = getPaths(basePath).TEST_FILE;
   const recorderRef = useRef(new AudioRecorder());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stoppingRef = useRef(false);
@@ -45,11 +47,11 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   function startRecording(): void {
     if (status === TestStatus.RECORDING) return;
     try {
-      const tmpDir = path.dirname(PATHS.TEST_FILE);
+      const tmpDir = path.dirname(testFilePath);
       if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
       recorderRef.current.setDevice(mic.id);
-      recorderRef.current.start(PATHS.TEST_FILE);
+      recorderRef.current.start(testFilePath);
       setStatus(TestStatus.RECORDING);
       setElapsed(0);
       setErrorText('');
@@ -78,14 +80,14 @@ export function MicTest({ mic, onConfirm, onCancel }: MicTestProps) {
   }, []);
 
   async function handlePlayback(): Promise<void> {
-    if (!hasRecording || !fs.existsSync(PATHS.TEST_FILE)) {
+    if (!hasRecording || !fs.existsSync(testFilePath)) {
       setErrorText('No test recording found. Record first.');
       return;
     }
     setStatus(TestStatus.PLAYING);
     setErrorText('');
     try {
-      await playAudio(PATHS.TEST_FILE);
+      await playAudio(testFilePath);
     } catch (e: unknown) {
       setErrorText(`Playback error: ${e instanceof Error ? e.message : String(e)}`);
     } finally {

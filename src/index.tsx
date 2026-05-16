@@ -1,14 +1,46 @@
-import React from 'react';
-import { render } from 'ink';
+#!/usr/bin/env node
+import React, { useState, useEffect } from 'react';
+import { render, Box, Text } from 'ink';
 import { App } from './components/App.js';
-import { validateConfig } from './config/env.js';
+import { SetupPrompt } from './components/SetupPrompt.js';
+import { ConfigManager, type AppConfig } from './config/configManager.js';
 
-try {
-  validateConfig();
-} catch (error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error('\x1b[31m%s\x1b[0m', message);
-  process.exit(1);
+function Root() {
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  useEffect(() => {
+    const loadedConfig = ConfigManager.load();
+    if (!loadedConfig.apiKey || !ConfigManager.validateBasePath(loadedConfig.basePath)) {
+      setNeedsSetup(true);
+      setConfig(loadedConfig);
+    } else {
+      ConfigManager.initializeBasePath(loadedConfig.basePath);
+      setConfig(loadedConfig);
+    }
+  }, []);
+
+  if (!config) {
+    return (
+      <Box padding={1}>
+        <Text>Loading configuration...</Text>
+      </Box>
+    );
+  }
+
+  if (needsSetup) {
+    return (
+      <SetupPrompt
+        initialConfig={config}
+        onComplete={(c) => {
+          setConfig(c);
+          setNeedsSetup(false);
+        }}
+      />
+    );
+  }
+
+  return <App appConfig={config} />;
 }
 
-render(<App />);
+render(<Root />);

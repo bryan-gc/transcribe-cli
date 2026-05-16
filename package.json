@@ -1,28 +1,41 @@
 {
-  "name": "trancriber",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@bryan-gc/transcribe-cli",
+  "version": "1.0.2",
+  "description": "CLI tool to record audio and transcribe it using OpenAI Whisper",
+  "main": "dist/index.js",
+  "bin": {
+    "transcribe-cli": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "start": "tsx src/index.tsx",
+    "build": "rm -rf dist && tsc",
+    "prepublishOnly": "npm run build",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "format:check": "prettier --check 'src/**/*.{ts,tsx}'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "cli",
+    "transcribe",
+    "openai",
+    "whisper",
+    "audio"
+  ],
+  "author": "bryan-gc",
   "license": "ISC",
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "@types/node": "^25.7.0",
-    "dotenv": "^17.4.2",
     "ink": "^7.0.3",
     "openai": "^6.37.0",
     "react": "^19.2.6",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.22.0",
     "typescript": "^6.0.3"
   },
   "devDependencies": {
@@ -33,7 +46,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.8.3",
-    "tsx": "^4.22.0",
     "typescript-eslint": "^8.59.3"
   }
 }

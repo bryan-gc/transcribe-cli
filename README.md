@@ -1,49 +1,49 @@
-# CLI Audio Transcriber
+# transcribe-cli
 
-Una aplicación de terminal (CLI) escrita en Node.js y TypeScript para grabar audio desde el micrófono y transcribirlo utilizando la API Whisper de OpenAI.
+A terminal (CLI) application built with Node.js and TypeScript that records audio from your microphone and transcribes it using the OpenAI Whisper API.
 
-## Requisitos Previos del Sistema (Importante)
+## System Requirements
 
-Para que Node.js pueda grabar audio desde tu micrófono, necesita apoyarse en herramientas del sistema operativo. Dependiendo de tu sistema, debes instalar lo siguiente **antes** de correr el proyecto:
+This tool depends on native audio utilities. Install them before running:
 
 ### Linux (Ubuntu / Debian)
-Necesitas instalar `sox` y las librerías de soporte de formatos de audio:
 ```bash
 sudo apt-get update
 sudo apt-get install sox libsox-fmt-all
 ```
 
 ### macOS
-Puedes instalar `sox` usando Homebrew:
 ```bash
 brew install sox
 ```
 
 ### Windows
-1. Descarga los binarios de [SoX](https://sourceforge.net/projects/sox/).
-2. Añade la carpeta donde extrajiste SoX a tu variable de entorno `PATH`.
+1. Download the binaries from [SoX](https://sourceforge.net/projects/sox/).
+2. Add the SoX folder to your `PATH` environment variable.
 
 ---
 
-## Instalación del Proyecto
+## Installation
 
-1. Clona el repositorio o descarga los archivos.
-2. Instala las dependencias de Node:
-   ```bash
-   npm install
-   ```
-3. Crea un archivo `.env` basado en el `.env.example` y coloca tu API Key de OpenAI:
-   ```env
-   OPENAI_API_KEY=tu_api_key_aqui
-   ```
-
-## Uso
-
-Para iniciar la aplicación, simplemente corre:
 ```bash
-npm start
+npm install -g @bryan-gc/transcribe-cli
 ```
 
-La aplicación mostrará un menú interactivo en la terminal. Puedes controlarlo de dos formas:
-- **Flechas Direccionales:** Usa Arriba/Abajo para moverte y Enter para seleccionar una opción.
-- **Atajos de Teclado:** Presiona `r` para grabar, `p` para pausar, `s` para detener y `t` para transcribir.
+## First Run & Configuration
+
+On the first launch, an interactive prompt will ask you for:
+- Your **OpenAI API Key**
+- A **base path** where audio recordings and glossaries will be stored
+
+Your settings are saved persistently at `~/.transcribe-cli/config.json` and reused on every subsequent run.
+
+## Usage
+
+```bash
+transcribe-cli
+```
+
+Navigate the interactive menu with:
+- **Arrow keys** — move up/down
+- **Enter** — confirm selection
+- **Hotkeys** — press the letter shown in brackets (e.g. `r` to record, `t` to transcribe, `q` to quit)

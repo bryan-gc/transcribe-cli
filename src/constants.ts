@@ -14,11 +14,12 @@ export const EXT = {
   GLOSSARY: '.txt',
 } as const;
 
-/** Resolved paths used globally */
-export const PATHS = {
-  GLOSSARIES_DIR: path.resolve(process.cwd(), DIR.GLOSSARIES),
-  TEST_FILE: path.resolve(process.cwd(), DIR.TMP, `mic-test${EXT.AUDIO}`),
-} as const;
+export function getPaths(basePath: string) {
+  return {
+    GLOSSARIES_DIR: path.resolve(basePath, DIR.GLOSSARIES),
+    TEST_FILE: path.resolve(basePath, DIR.TMP, `mic-test${EXT.AUDIO}`),
+  };
+}
 
 /** Sentinel value used by the Picker component's "go back" option. */
 export const BACK_OPTION_VALUE = '__back__' as const;

@@ -2,7 +2,7 @@ import type { ChildProcess } from 'child_process';
 import { spawn } from 'child_process';
 import { execSync } from 'child_process';
 import os from 'os';
-import { Platform, Cmd, Signal, ProcessEvent, StdioOption } from '../constants';
+import { Platform, Cmd, Signal, ProcessEvent, StdioOption } from '../constants.js';
 
 let playProcess: ChildProcess | null = null;
 
