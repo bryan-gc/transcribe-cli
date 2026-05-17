@@ -8,6 +8,7 @@ export interface AppConfig {
   basePath: string;
   selectedMicrophone: string;
   selectedLanguage: LanguageCode;
+  autoCopy: boolean;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
@@ -18,6 +19,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   basePath: path.join(os.homedir(), 'transcribe_cli_data'),
   selectedMicrophone: 'default',
   selectedLanguage: LanguageCode.ENGLISH,
+  autoCopy: false,
 };
 
 export class ConfigManager {

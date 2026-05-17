@@ -9,6 +9,13 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bryan-gc/transcribe-cli"
+  },
   "type": "module",
   "scripts": {
     "start": "tsx src/index.tsx",
@@ -32,6 +39,7 @@
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "@types/node": "^25.7.0",
+    "commander": "^14.0.3",
     "ink": "^7.0.3",
     "openai": "^6.37.0",
     "react": "^19.2.6",

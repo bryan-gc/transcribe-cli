@@ -39,11 +39,64 @@ Your settings are saved persistently at `~/.transcribe-cli/config.json` and reus
 
 ## Usage
 
+The application features two main modes of operation: **Auto Record Mode** (default) and **Manual Menu Mode**.
+
+### 1. Auto Record Mode (Default)
+
+Optimized for quick usage. By default, launching the app instantly starts recording your audio using your saved configuration.
+
 ```bash
+# Start recording instantly
 transcribe-cli
+```
+
+- **Recording:** Starts immediately upon launch.
+- **Stop & Transcribe:** Simply press `Enter`. The tool will stop recording, run the transcription, copy it to your clipboard (if enabled in your config), and exit automatically.
+
+### 2. Manual Menu Mode
+
+If you prefer the interactive terminal menu to change settings (Microphone, Language, Glossary, etc.) on the fly before recording, use the `--manual` flag:
+
+```bash
+transcribe-cli --manual
+# or
+transcribe-cli -m
 ```
 
 Navigate the interactive menu with:
 - **Arrow keys** — move up/down
 - **Enter** — confirm selection
-- **Hotkeys** — press the letter shown in brackets (e.g. `r` to record, `t` to transcribe, `q` to quit)
+- **Hotkeys** — press the letter shown in brackets (e.g., `r` to record, `t` to transcribe, `q` to quit)
+
+### Other CLI Options
+
+```bash
+# Display help and all available commands
+transcribe-cli --help
+transcribe-cli -h
+
+# Output the current version
+transcribe-cli --version
+transcribe-cli -v
+```
+
+---
+
+## Development Usage
+
+If you are developing the tool locally and running it via `npm run start`, you must use a double dash (`--`) to pass arguments to the script instead of `npm` itself:
+
+```bash
+# Auto Record Mode (Default)
+npm run start
+
+# Manual Menu Mode
+npm run start -- --manual
+npm run start -- -m
+
+# View Help
+npm run start -- --help
+
+# View Version
+npm run start -- --version
+```

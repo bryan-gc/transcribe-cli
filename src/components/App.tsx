@@ -91,7 +91,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
   const [isPaused, setIsPaused] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
-  const [clipboardEnabled, setClipboardEnabled] = useState(true);
+  const [clipboardEnabled, setClipboardEnabled] = useState(appConfig.autoCopy);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
@@ -195,7 +195,11 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         }
 
         case MenuAction.TOGGLE_CLIPBOARD:
-          setClipboardEnabled((prev) => !prev);
+          setClipboardEnabled((prev) => {
+            const newValue = !prev;
+            saveConfig({ autoCopy: newValue });
+            return newValue;
+          });
           break;
 
         case MenuAction.TRANSCRIBE: {

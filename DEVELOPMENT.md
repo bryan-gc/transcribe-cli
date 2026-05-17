@@ -38,19 +38,42 @@ npm unlink -g @bryan-gc/transcribe-cli
 
 ---
 
-## Publishing a New Version to NPM
+## Automated Publishing via GitHub Actions (Trusted Publishers)
 
-Only do this when the feature/fix is ready and tested.
+This project uses **NPM Trusted Publishers (OIDC)** to automatically and securely publish new versions to NPM from GitHub Actions, generating an authentic "Provenance" signature.
 
+### One-Time Setup (NPM)
+To link NPM with GitHub securely, fill out the form in your NPM package settings (`Settings -> Trusted publishing`):
+
+- **Publisher**: `GitHub Actions`
+- **Organization or user**: `bryan-gc`
+- **Repository**: `transcribe-cli`
+- **Workflow filename**: `publish.yml`
+- **Environment name**: *(leave blank)*
+
+> **Security Tip**: After linking, go to `Publishing access` in the same NPM settings and select **"Require two-factor authentication and disallow tokens"**. Your GitHub Action will still work perfectly via OIDC, but your account will be locked down against traditional token theft.
+
+### How to Release a New Version
+
+We no longer run `npm publish` locally. Instead, we let GitHub Actions do it.
+
+1. **Bump the version** in your local machine and commit:
 ```bash
-# 1. Bump the version (patch = 1.0.x, minor = 1.x.0, major = x.0.0)
-npm version patch --no-git-tag-version
-
-# 2. Build + publish (prepublishOnly runs build automatically)
-npm publish --access public
+npm version patch
+git push origin main
 ```
 
-### After publishing, update your global install:
+2. **Trigger the automated publish**:
+Push a tag starting with `v` (which matches the new version) to GitHub:
+```bash
+git push origin v1.0.4
+```
+*Alternatively, you can just go to GitHub.com, create a new "Release" and set the tag (e.g. `v1.0.4`).*
+
+3. **Wait a minute**:
+The GitHub Action will run automatically, build the project, and publish it to NPM with the Provenance badge.
+
+### After publishing, update your global install locally:
 ```bash
 npm install -g @bryan-gc/transcribe-cli
 ```
@@ -61,9 +84,9 @@ npm install -g @bryan-gc/transcribe-cli
 
 | Scenario | Command |
 |---|---|
-| Quick development | `npm start` |
+| Quick development | `npm run start` |
 | Test as global binary locally | `npm run build && npm link` |
-| Release a new version | `npm version patch --no-git-tag-version && npm publish --access public` |
+| Release a new version | `npm version patch` -> `git push` -> `git push origin v1.0.X` |
 | Update global install after release | `npm install -g @bryan-gc/transcribe-cli` |
 
 ---
@@ -79,15 +102,3 @@ To reset the configuration (re-run setup), simply delete that file:
 ```bash
 rm ~/.transcribe-cli/config.json
 ```
-
----
-
-## NPM Token Setup (if auth fails)
-
-If `npm publish` returns a 403, set your granular access token:
-```bash
-npm set //registry.npmjs.org/:_authToken=npm_XXXXXXXXXXXXXXXX
-```
-
-Generate the token at: **npmjs.com → Avatar → Access Tokens → Generate New Token → Granular Access Token**
-Make sure to enable **"Bypass two-factor authentication"** when creating it.
