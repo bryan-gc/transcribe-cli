@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { Picker } from './Picker.js';
 import { MicTest } from './MicTest.js';
+import Spinner from 'ink-spinner';
 import { AudioRecorder } from '../audio/recorder.js';
 import { listMicDevices } from '../audio/micDevices.js';
 import type { MicDevice } from '../audio/micDevices.js';
@@ -321,7 +322,15 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
       <Text bold>{'=== transcribe-cli ==='}</Text>
       <Box flexDirection="column" marginTop={1} marginBottom={1}>
         <Text>
-          Status: <Text color="yellow">{statusText}</Text>
+          Status:{' '}
+          <Text color="yellow">
+            {(isRecording || isTranscribing) && (
+              <Text color="cyan">
+                <Spinner type="dots" />{' '}
+              </Text>
+            )}
+            {statusText}
+          </Text>
         </Text>
         <Text>
           Language: <Text color="magenta">{LANGUAGE_NAMES[activeLanguage]}</Text>

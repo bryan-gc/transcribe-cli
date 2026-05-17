@@ -55,23 +55,28 @@ To link NPM with GitHub securely, fill out the form in your NPM package settings
 
 ### How to Release a New Version
 
-We no longer run `npm publish` locally. Instead, we let GitHub Actions do it.
+We no longer run `npm publish` locally. Instead, we let GitHub Actions do it automatically.
 
-1. **Bump the version** in your local machine and commit:
+1. **Commit your latest changes**:
+```bash
+git add .
+git commit -m "feat: describe your changes"
+```
+
+2. **Bump the version**:
 ```bash
 npm version patch
-git push origin main
 ```
+*(This command automatically updates `package.json` to the next version and creates a Git Tag locally. Use `minor` or `major` instead of `patch` if needed).*
 
-2. **Trigger the automated publish**:
-Push a tag starting with `v` (which matches the new version) to GitHub:
+3. **Push the code and the Tag to GitHub**:
 ```bash
-git push origin v1.0.4
+git push --follow-tags
 ```
-*Alternatively, you can just go to GitHub.com, create a new "Release" and set the tag (e.g. `v1.0.4`).*
+*(El flag `--follow-tags` empuja tanto tus commits (el código) como el nuevo tag que `npm version` acaba de crear. Al llegar el tag a GitHub, se dispara inmediatamente nuestro archivo `publish.yml`).*
 
-3. **Wait a minute**:
-The GitHub Action will run automatically, build the project, and publish it to NPM with the Provenance badge.
+4. **Monitor the Action in GitHub**:
+Go to your repository on GitHub.com and click the **Actions** tab. You will see a workflow running. Once it finishes (it usually takes around 1 minute), your new version will be live on NPM with the Provenance badge.
 
 ### After publishing, update your global install locally:
 ```bash

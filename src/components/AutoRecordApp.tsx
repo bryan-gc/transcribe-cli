@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
+import Spinner from 'ink-spinner';
 import path from 'path';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
@@ -174,7 +175,15 @@ export function AutoRecordApp({ appConfig }: { appConfig: AppConfig }) {
       <Text bold>{'=== transcribe-cli (Auto Record) ==='}</Text>
       <Box flexDirection="column" marginTop={1} marginBottom={1}>
         <Text>
-          Status: <Text color="yellow">{statusText}</Text>
+          Status:{' '}
+          <Text color="yellow">
+            {(isRecording || isTranscribing) && (
+              <Text color="cyan">
+                <Spinner type="dots" />{' '}
+              </Text>
+            )}
+            {statusText}
+          </Text>
         </Text>
         <Text>
           Language: <Text color="magenta">{LANGUAGE_NAMES[activeLanguage]}</Text>
