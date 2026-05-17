@@ -1,11 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Box, Text, useInput } from 'ink';
-import path from 'path';
-import fs from 'fs';
-import { AudioRecorder } from '../audio/recorder.js';
-import { playAudio, stopPlayback } from '../audio/audioPlayer.js';
+import { useMicTest } from '../hooks/useMicTest.js';
 import type { MicDevice } from '../audio/micDevices.js';
-import { RECORDING_TICK_MS, ActionHotkey, TestStatus, getPaths } from '../constants.js';
+import { ActionHotkey, TestStatus } from '../constants.js';
 
 interface MicTestProps {
   mic: MicDevice;
@@ -14,91 +11,10 @@ interface MicTestProps {
   onCancel: () => void;
 }
 
-const AUTO_STOP_SECS = 5;
-
 export function MicTest({ mic, basePath, onConfirm, onCancel }: MicTestProps) {
-  const [status, setStatus] = useState<TestStatus>(TestStatus.IDLE);
-  const [hasRecording, setHasRecording] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [errorText, setErrorText] = useState('');
-
-  const testFilePath = getPaths(basePath).TEST_FILE;
-  const recorderRef = useRef(new AudioRecorder());
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stoppingRef = useRef(false);
-
-  useEffect(() => {
-    const recorderInstance = recorderRef.current;
-    return () => {
-      clearTimer();
-      stoppingRef.current = true;
-      recorderInstance.stop().catch(() => {});
-      stopPlayback();
-    };
-  }, []);
-
-  function clearTimer(): void {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }
-
-  function startRecording(): void {
-    if (status === TestStatus.RECORDING) return;
-    try {
-      const tmpDir = path.dirname(testFilePath);
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-
-      recorderRef.current.setDevice(mic.id);
-      recorderRef.current.start(testFilePath);
-      setStatus(TestStatus.RECORDING);
-      setElapsed(0);
-      setErrorText('');
-
-      timerRef.current = setInterval(() => {
-        setElapsed((prev) => {
-          const next = prev + 1;
-          if (next >= AUTO_STOP_SECS) stopRecording();
-          return next;
-        });
-      }, RECORDING_TICK_MS);
-    } catch (e: unknown) {
-      setErrorText(`Recording error: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-
-  const stopRecording = useCallback(async () => {
-    if (stoppingRef.current) return;
-    stoppingRef.current = true;
-    clearTimer();
-    setStatus(TestStatus.SAVING);
-    await recorderRef.current.stop();
-    stoppingRef.current = false;
-    setStatus(TestStatus.RECORDED);
-    setHasRecording(true);
-  }, []);
-
-  async function handlePlayback(): Promise<void> {
-    if (!hasRecording || !fs.existsSync(testFilePath)) {
-      setErrorText('No test recording found. Record first.');
-      return;
-    }
-    setStatus(TestStatus.PLAYING);
-    setErrorText('');
-    try {
-      await playAudio(testFilePath);
-    } catch (e: unknown) {
-      setErrorText(`Playback error: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setStatus(TestStatus.RECORDED);
-    }
-  }
-
-  function handleStopPlayback(): void {
-    stopPlayback();
-    setStatus(TestStatus.RECORDED);
-  }
+  const { state, actions } = useMicTest(mic, basePath);
+  const { status, hasRecording, elapsed, errorText, AUTO_STOP_SECS } = state;
+  const { startRecording, stopRecording, handlePlayback, handleStopPlayback } = actions;
 
   useInput((input, key) => {
     const k = input.toLowerCase();
@@ -154,7 +70,7 @@ export function MicTest({ mic, basePath, onConfirm, onCancel }: MicTestProps) {
   };
 
   // ─── Action list ──────────────────────────────────────────────────────────
-  const actions = (): React.ReactElement => {
+  const actionList = (): React.ReactElement => {
     switch (status) {
       case TestStatus.RECORDING:
         return <Text color="yellow">[{ActionHotkey.STOP}] Stop recording early</Text>;
@@ -199,7 +115,7 @@ export function MicTest({ mic, basePath, onConfirm, onCancel }: MicTestProps) {
         {statusLine()}
       </Box>
 
-      {actions()}
+      {actionList()}
 
       {errorText !== '' && (
         <Box marginTop={1}>
