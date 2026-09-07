@@ -2,7 +2,8 @@ import fs from 'fs';
 import type { ITranscriber } from '../transcriber/ITranscriber.js';
 import { extractTextFromSrt } from './srtParser.js';
 import { copyTextToClipboard } from './clipboard.js';
-import { Encoding, LanguageCode, TranscriptionFormat } from '../constants.js';
+import type { LanguageCode } from '../constants.js';
+import { Encoding, TranscriptionFormat } from '../constants.js';
 
 export interface TranscriptionJob {
   audioPath: string;

@@ -1,14 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
-import { listMicDevices, type MicDevice } from '../audio/micDevices.js';
+import { listMicDevices, resolveMicDevice, type MicDevice } from '../audio/micDevices.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
 import {
-  DEFAULT_DEVICE_ID,
-  DEFAULT_DEVICE_LABEL,
   LanguageCode,
   LANGUAGE_NAMES,
   AVAILABLE_LANGUAGES,
@@ -41,10 +39,9 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   const [activeGlossary, setActiveGlossary] = useState(initialGlossaries[0] ?? '');
 
   const initialMics = listMicDevices();
-  const fallbackMic: MicDevice = { id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL };
-  const savedMic = initialMics.find((m) => m.id === appConfig.selectedMicrophone);
-  const [activeMic, setActiveMic] = useState<MicDevice>(savedMic ?? fallbackMic);
-  const [pendingMic, setPendingMic] = useState<MicDevice>(savedMic ?? fallbackMic);
+  const initialMic = resolveMicDevice(appConfig.microphonePriority, initialMics).device;
+  const [activeMic, setActiveMic] = useState<MicDevice>(initialMic);
+  const [pendingMic, setPendingMic] = useState<MicDevice>(initialMic);
   const [micDevices, setMicDevices] = useState<MicDevice[]>(initialMics);
   const [glossaryFiles, setGlossaryFiles] = useState<string[]>(initialGlossaries);
 

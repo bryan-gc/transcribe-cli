@@ -4,7 +4,7 @@ import { AudioRecorder } from '../audio/recorder.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
-import { listMicDevices } from '../audio/micDevices.js';
+import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
 import { LANGUAGE_NAMES } from '../constants.js';
 
@@ -23,13 +23,9 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
   const transcriberRef = useRef<WhisperTranscriber | null>(null);
 
   const activeLanguage = appConfig.selectedLanguage;
-  const activeMicId = appConfig.selectedMicrophone;
-
-  const mics = listMicDevices();
-  const activeMic = mics.find((m) => m.id === activeMicId) ?? {
-    id: activeMicId,
-    label: activeMicId,
-  };
+  const { device: activeMic, isFallback: micIsFallback } = resolveMicDevice(
+    appConfig.microphonePriority,
+  );
 
   const activeGlossary = glossary || getInitialGlossary(appConfig.basePath);
 
@@ -51,14 +47,18 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
 
     recorder.start(p.audioPath);
     setIsRecording(true);
-    setStatusText('🔴 Recording... Press [Enter] to stop and transcribe.');
+    setStatusText(
+      micIsFallback
+        ? `🔴 Recording with ${activeMic.label} — the preferred microphone is not connected.`
+        : '🔴 Recording... Press [Enter] to stop and transcribe.',
+    );
 
     return () => {
       if (recorderRef.current) {
         recorderRef.current.stop().catch(() => {});
       }
     };
-  }, [appConfig, activeMic.id]);
+  }, [appConfig, activeMic.id, activeMic.label, micIsFallback]);
 
   const transcribe = async () => {
     if (!transcriberRef.current) return;

@@ -7,6 +7,7 @@ export interface AppConfig {
   apiKey: string;
   basePath: string;
   selectedMicrophone: string;
+  microphonePriority: string[];
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
 }
@@ -18,6 +19,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   apiKey: '',
   basePath: path.join(os.homedir(), 'transcribe_cli_data'),
   selectedMicrophone: 'default',
+  microphonePriority: [],
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
 };
@@ -30,7 +32,12 @@ export class ConfigManager {
     try {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
       const parsed = JSON.parse(content);
-      return { ...DEFAULT_CONFIG, ...parsed };
+      const config = { ...DEFAULT_CONFIG, ...parsed };
+
+      if (config.microphonePriority.length === 0 && config.selectedMicrophone) {
+        config.microphonePriority = [config.selectedMicrophone];
+      }
+      return config;
     } catch {
       return { ...DEFAULT_CONFIG };
     }
