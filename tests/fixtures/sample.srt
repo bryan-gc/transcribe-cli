@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:02,480
+Buenos días, empezamos con el reporte.
+
+2
+00:00:02,480 --> 00:00:05,120
+Ya lo subí ayer por la tarde.
+
+3
+00:00:05,120 --> 00:00:06,900
+Perfecto, entonces cerramos.

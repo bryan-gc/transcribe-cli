@@ -6,9 +6,15 @@ import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants.j
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
 
-  constructor(apiKey: string) {
+  /**
+   * @param fetchImpl Replaces the transport. Tests pass a stub to assert on the request that
+   *                  would go out, which is the only way to cover the request shape without a
+   *                  network round trip and a paid call.
+   */
+  constructor(apiKey: string, fetchImpl?: typeof fetch) {
     this.openai = new OpenAI({
       apiKey,
+      ...(fetchImpl ? { fetch: fetchImpl } : {}),
     });
   }
 
