@@ -19,6 +19,7 @@ import {
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsSetup } from './transcriber/createTranscriber.js';
 import { activeCapabilities, formatReport, runChecks } from './system/doctor.js';
+import { formatUsageReport, readUsage } from './utils/usageLog.js';
 import { AVAILABLE_LANGUAGES } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,8 +41,11 @@ program
   .option('-s, --speakers', 'Detect and label who is speaking')
   .option('--local', 'Use the local WhisperX engine instead of the API')
   .option('--engine <name>', 'openai | local')
-  .option('--all', 'With doctor: list every check, not just the ones in use')
-  .argument('[command]', 'doctor — check the tools this setup needs')
+  .option('--all', 'With doctor: list every check · with usage: list every run')
+  .argument(
+    '[command]',
+    'doctor — check the tools this setup needs · usage — what every transcription cost',
+  )
   .option('--no-copy', 'Do not copy the result to the clipboard')
   .option('-y, --yes', 'Skip the cost confirmation shown for long audio files')
   .parse(process.argv);
@@ -54,6 +58,11 @@ if (program.args[0] === 'doctor') {
   const { text, failedInUse } = formatReport(runChecks(config, active), showAll);
   process.stdout.write(`transcribe-cli doctor\n${text}\n`);
   process.exit(failedInUse > 0 ? 1 : 0);
+}
+if (program.args[0] === 'usage') {
+  const report = formatUsageReport(readUsage(config.basePath), program.opts().all === true);
+  process.stdout.write(`${report}\n`);
+  process.exit(0);
 }
 const basePathReady = ConfigManager.validateBasePath(config.basePath);
 

@@ -171,6 +171,7 @@ export function useAutoRecord(
         diarize,
         diarizedPath: currentDiarizedPath,
         metaPath: currentMetaPath,
+        basePath: appConfig.basePath,
         source: RecordingKind.RECORDED,
         copyToClipboard: appConfig.autoCopy,
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),

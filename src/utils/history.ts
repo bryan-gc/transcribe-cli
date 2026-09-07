@@ -4,7 +4,10 @@ import { DIR, EXT, Encoding, HISTORY_SAMPLE_SIZE } from '../constants.js';
 import type { TranscriptionMeta } from './transcriptionMeta.js';
 import type { SpeedLookup } from './estimate.js';
 
-export function readRecentMeta(basePath: string, limit = HISTORY_SAMPLE_SIZE): TranscriptionMeta[] {
+export function readRecentMeta(
+  basePath: string,
+  limit: number = HISTORY_SAMPLE_SIZE,
+): TranscriptionMeta[] {
   const root = path.resolve(basePath, DIR.DATA);
   if (!fs.existsSync(root)) return [];
 

@@ -117,6 +117,18 @@ TRANSCRIBE_FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg transcribe-cli -f nota.mp3
 
 ---
 
+### What Everything Cost
+
+Every transcription leaves a `.meta.json` next to its text with the engine, the model, how long it
+took and what it cost, and appends the same line to `usage.jsonl` in your data folder.
+
+```bash
+transcribe-cli usage          # by day and by engine, with the total
+transcribe-cli usage --all    # plus one line per transcription
+```
+
+---
+
 ### CLI Options
 
 | Option | What it does |

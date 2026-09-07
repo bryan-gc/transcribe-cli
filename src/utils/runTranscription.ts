@@ -6,6 +6,7 @@ import { buildMeta, type TranscriptionMeta } from './transcriptionMeta.js';
 import { extractTextFromSrt } from './srtParser.js';
 import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
+import { appendUsage } from './usageLog.js';
 import type { LanguageCode } from '../constants.js';
 import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
 
@@ -18,6 +19,7 @@ export interface TranscriptionJob {
   diarize?: boolean;
   diarizedPath?: string;
   metaPath?: string;
+  basePath?: string;
   source?: RecordingKind;
   copyToClipboard: boolean;
   onProgress?: (status: string) => void;
@@ -83,6 +85,7 @@ export async function runTranscription(
     usage: result.usage,
   });
   if (job.metaPath) fs.writeFileSync(job.metaPath, JSON.stringify(meta, null, 2), Encoding.UTF8);
+  if (job.basePath) appendUsage(job.basePath, meta);
 
   const base = {
     text: cleanText,

@@ -63,6 +63,7 @@ export function useImportTranscribe(
           diarize: choice.diarize,
           diarizedPath: imported.diarizedPath,
           metaPath: imported.metaPath,
+          basePath: appConfig.basePath,
           source: RecordingKind.IMPORTED,
           copyToClipboard: appConfig.autoCopy,
           onProgress: (msg) => setStatusText(`⏳ ${msg}`),

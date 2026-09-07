@@ -172,6 +172,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               language: activeLanguage,
               glossary: glossaryPrompt,
               metaPath: currentMetaPath,
+              basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,
               copyToClipboard: clipboardEnabled,
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
