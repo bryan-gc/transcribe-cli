@@ -3,6 +3,19 @@ import path from 'path';
 import os from 'os';
 import { DIR, EXT, LanguageCode, LEGACY_DATA_DIR, RecordingKind } from '../constants.js';
 
+export enum Engine {
+  OPENAI = 'openai',
+  LOCAL = 'local',
+}
+
+export interface LocalWhisperConfig {
+  /** The whisperx executable; scripts/install-whisperx.sh puts one at the default path. */
+  binPath: string;
+  model: string;
+  device: string;
+  computeType: string;
+}
+
 export interface AppConfig {
   apiKey: string;
   basePath: string;
@@ -11,6 +24,8 @@ export interface AppConfig {
   microphonePriority: string[];
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
+  engine: Engine;
+  localWhisper: LocalWhisperConfig;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
@@ -23,6 +38,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   microphonePriority: [],
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
+  engine: Engine.OPENAI,
+  localWhisper: {
+    binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),
+    // large-v3 in float16 needs most of a 6 GB card, leaving no room to spare; turbo is the
+    // better default and int8 is the way out if a smaller card runs out of memory.
+    model: 'large-v3-turbo',
+    device: 'cuda',
+    computeType: 'float16',
+  },
 };
 
 export class ConfigManager {
@@ -33,7 +57,12 @@ export class ConfigManager {
     try {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
       const parsed = JSON.parse(content);
-      const config = { ...DEFAULT_CONFIG, ...parsed };
+      // Spreading is shallow, so a partial localWhisper in the file would blank the rest of it.
+      const config = {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        localWhisper: { ...DEFAULT_CONFIG.localWhisper, ...(parsed.localWhisper ?? {}) },
+      };
 
       // A configuration written before the list existed carries the single microphone it chose,
       // which becomes a list of one and keeps behaving the same way.
