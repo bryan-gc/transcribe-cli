@@ -9,7 +9,6 @@ import {
   EXT,
   MAX_UPLOAD_BYTES,
   RecordingKind,
-  StdioOption,
   SUPPORTED_IMPORT_EXT,
   AUDIO_CONFIG,
 } from '../constants.js';

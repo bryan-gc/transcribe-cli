@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { createTranscriber } from '../transcriber/createTranscriber.js';
 import type { ITranscriber } from '../transcriber/ITranscriber.js';

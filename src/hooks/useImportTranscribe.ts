@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import path from 'path';
 import { createTranscriber } from '../transcriber/createTranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
@@ -21,46 +21,53 @@ export function useImportTranscribe(
 
   const transcriberRef = useRef(createTranscriber(appConfig));
   const importedRef = useRef<ImportedAudio | null>(null);
+  const startedRef = useRef(false);
 
   const language = appConfig.selectedLanguage;
 
-  const transcribe = async (imported: ImportedAudio) => {
-    const glossaryPrompt = readGlossaryContent(appConfig.basePath, glossary);
-    setIsTranscribing(true);
-    setFailure(null);
-    setStatusText(
-      `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
-    );
-
-    try {
-      const cleanText = await runTranscription(transcriberRef.current, {
-        audioPath: imported.audioPath,
-        srtPath: imported.srtPath,
-        textPath: imported.textPath,
-        language,
-        glossary: glossaryPrompt,
-        diarize,
-        diarizedPath: imported.diarizedPath,
-        copyToClipboard: appConfig.autoCopy,
-        onProgress: (msg) => setStatusText(`⏳ ${msg}`),
-      });
-
-      setTranscriptionResult(cleanText);
+  const transcribe = useCallback(
+    async (imported: ImportedAudio) => {
+      const glossaryPrompt = readGlossaryContent(appConfig.basePath, glossary);
+      setIsTranscribing(true);
+      setFailure(null);
       setStatusText(
-        appConfig.autoCopy
-          ? '✅ Transcription done — copied to clipboard.'
-          : '✅ Transcription completed and saved.',
+        `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
       );
-      setTimeout(exit, 500);
-    } catch (err: unknown) {
-      setFailure(describeTranscriptionError(err));
-      setStatusText('❌ Transcription failed.');
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
+
+      try {
+        const cleanText = await runTranscription(transcriberRef.current, {
+          audioPath: imported.audioPath,
+          srtPath: imported.srtPath,
+          textPath: imported.textPath,
+          language,
+          glossary: glossaryPrompt,
+          diarize,
+          diarizedPath: imported.diarizedPath,
+          copyToClipboard: appConfig.autoCopy,
+          onProgress: (msg) => setStatusText(`⏳ ${msg}`),
+        });
+
+        setTranscriptionResult(cleanText);
+        setStatusText(
+          appConfig.autoCopy
+            ? '✅ Transcription done — copied to clipboard.'
+            : '✅ Transcription completed and saved.',
+        );
+        setTimeout(exit, 500);
+      } catch (err: unknown) {
+        setFailure(describeTranscriptionError(err));
+        setStatusText('❌ Transcription failed.');
+      } finally {
+        setIsTranscribing(false);
+      }
+    },
+    [appConfig, glossary, language, diarize, exit],
+  );
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     let imported: ImportedAudio;
     try {
       setStatusText(`Copying ${path.basename(filePath)} into the archive...`);
@@ -72,8 +79,7 @@ export function useImportTranscribe(
       return;
     }
     void transcribe(imported);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [appConfig.basePath, filePath, transcribe]);
 
   return {
     state: {
