@@ -1,6 +1,27 @@
 # transcribe-cli
 
-A terminal (CLI) application built with Node.js and TypeScript that records audio from your microphone and transcribes it using the OpenAI Whisper API.
+A terminal application that records a voice note and gives you back the text, in the same breath.
+Built with Node.js and TypeScript. It transcribes through the OpenAI API or entirely on your own
+machine with WhisperX — your choice, per run or as a default.
+
+**What it does**
+
+- **Record and transcribe in one step.** Launch it, talk, press `Enter`. The text lands on your
+  clipboard and on disk.
+- **Pause while recording** with `space`, and the clock only counts audio, not the pause.
+- **Transcribe files you already have** with `-f`: voice notes, meeting recordings, anything
+  `ffmpeg` can read.
+- **Two engines.** The OpenAI API, or **WhisperX locally** — no network, no cost per minute.
+- **Speaker labels** with `-s`, for a meeting or an interview.
+- **Glossaries** (`-g`) so names, acronyms and jargon come out spelled right.
+- **A microphone priority list**, so it falls back on its own when your usual mic is unplugged.
+- **The cost before you spend it**, live while you record, and a `.meta.json` with what each run
+  actually cost afterwards.
+- **`transcribe-cli usage`** to add it all up by day and by engine.
+- **`transcribe-cli doctor`** to tell you what is missing, per capability, with the exact command
+  to install it.
+- **Retry without losing the audio** if a transcription fails.
+- **Five languages**: `es`, `en`, `pt`, `fr`, `de`.
 
 ## System Requirements
 
@@ -40,7 +61,16 @@ On the first launch, an interactive prompt will ask you for:
 - Your **OpenAI API Key**
 - A **base path** where audio recordings and glossaries will be stored
 
-Your settings are saved persistently at `~/.transcribe-cli/config.json` and reused on every subsequent run.
+Your settings are saved persistently at `~/.transcribe-cli/config.json` (readable only by you) and
+reused on every subsequent run. Everything else — engine, language, microphone order, glossary,
+clipboard — is changed later from the menu:
+
+```bash
+transcribe-cli -c
+```
+
+The API key is only asked for because the OpenAI engine is the default. Switch the engine to local
+and no key is needed at all.
 
 ## Usage
 
@@ -128,6 +158,42 @@ transcribe-cli usage --all    # plus one line per transcription
 ```
 
 ---
+
+### Microphone Priority
+
+Instead of one fixed microphone, you keep an ordered list. The tool records with the first one that
+is actually connected, so unplugging your usual mic does not mean editing any configuration:
+
+```bash
+transcribe-cli -c        # Microphone → set the order
+```
+
+The status line names the microphone it ended up using, and says so when that was not your first
+choice.
+
+### Where Your Files Go
+
+Everything lives under the base path you chose on first run (`~/transcribe_cli_data` by default):
+
+```
+transcriptions/
+  recorded/2026-09-07/15-01-07.wav        the audio, the .srt, the .txt and the .meta.json
+  imported/2026-09-07/15-14-10__nota.txt  files brought in with -f, prefixed with when you ran it
+glossaries/                               one .txt per glossary
+usage.jsonl                               one line per transcription
+```
+
+Recordings are never deleted: the audio stays next to its transcript, grouped by day. Earlier
+versions kept everything in a `tmp/` folder; if you have one, the first run after updating moves it
+into `transcriptions/recorded/` on its own, without touching a file it would have to overwrite.
+
+### When a Transcription Fails
+
+The audio is written to disk before anything is sent, so a failure never costs you the recording.
+The tool stays open and offers `[r]` to retry the transcription on the audio it already has.
+
+If the engine you picked is not usable at all — no API key, or WhisperX not installed — it says so
+**before** opening the microphone, so you do not record into a dead end.
 
 ### CLI Options
 
