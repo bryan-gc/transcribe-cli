@@ -1,6 +1,6 @@
 {
   "name": "@bryan-gc/transcribe-cli",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "CLI tool to record audio and transcribe it using OpenAI Whisper",
   "main": "dist/index.js",
   "bin": {
