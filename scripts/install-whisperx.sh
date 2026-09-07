@@ -76,7 +76,7 @@ fi
 
 [ -x "$VENV/bin/pip" ] || fail "Virtualenv at $VENV has no pip. Remove it and run this again."
 
-info "Installing whisperx (this downloads torch and friends, around 2 GB)"
+info "Installing whisperx (this pulls torch and CUDA wheels: expect around 7 GB on disk)"
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install whisperx
 
