@@ -13,6 +13,7 @@ import {
   StdioOption,
   StreamEvent,
   ProcessEvent,
+  WAV_HEADER_BYTES,
 } from '../constants.js';
 
 export class AudioRecorder {
@@ -21,6 +22,7 @@ export class AudioRecorder {
   private filepath: string = '';
   private device: string = DEFAULT_DEVICE_ID;
   private _isPaused: boolean = false;
+  private startupError: Error | null = null;
 
   setDevice(device: string): void {
     if (this.cp) {
@@ -41,6 +43,7 @@ export class AudioRecorder {
     this.filepath = filepath;
     this.fileStream = fs.createWriteStream(filepath, { encoding: Encoding.BINARY });
     this._isPaused = false;
+    this.startupError = null;
 
     let env = process.env;
 
@@ -67,6 +70,7 @@ export class AudioRecorder {
         stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.IGNORE],
         env,
       });
+      this.watchStartup(Cmd.SOX);
       this.cp.stdout?.pipe(this.fileStream);
       return;
     }
@@ -98,7 +102,20 @@ export class AudioRecorder {
       stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.IGNORE],
       env,
     });
+    this.watchStartup(Cmd.ARECORD);
     this.cp.stdout?.pipe(this.fileStream);
+  }
+
+  private watchStartup(command: string): void {
+    this.cp?.on(ProcessEvent.ERROR, (error: NodeJS.ErrnoException) => {
+      this.startupError =
+        error.code === 'ENOENT'
+          ? new Error(
+              `${command} is not installed. Run transcribe-cli doctor to see what is missing.`,
+            )
+          : new Error(`${command} could not start: ${error.message}`);
+      this.cp = null;
+    });
   }
 
   pause(): void {
@@ -177,5 +194,14 @@ export class AudioRecorder {
 
   getFilepath(): string {
     return this.filepath;
+  }
+
+  getFailure(): Error | null {
+    if (this.startupError) return this.startupError;
+    if (this.filepath === '' || !fs.existsSync(this.filepath)) return null;
+    if (fs.statSync(this.filepath).size <= WAV_HEADER_BYTES) {
+      return new Error('The microphone produced no audio. Check it with transcribe-cli --manual.');
+    }
+    return null;
   }
 }

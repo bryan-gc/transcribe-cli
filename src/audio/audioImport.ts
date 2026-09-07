@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { getTimestampPaths } from '../utils/fileUtils.js';
+import { DEPENDENCIES, missingMessage, resolveBinary } from '../system/dependencies.js';
 import {
   Cmd,
   Encoding,
@@ -23,8 +24,10 @@ export interface ImportedAudio {
   converted: boolean;
 }
 
+const FFMPEG = DEPENDENCIES.find((d) => d.bin === Cmd.FFMPEG)!;
+
 export function hasFfmpeg(): boolean {
-  return spawnSync(Cmd.FFMPEG, ['-version'], { stdio: StdioOption.IGNORE }).status === 0;
+  return resolveBinary(Cmd.FFMPEG) !== null;
 }
 
 export function prepareImportedAudio(
@@ -53,19 +56,19 @@ export function prepareImportedAudio(
     return { ...paths, converted: false };
   }
 
-  if (!hasFfmpeg()) {
-    throw new ImportError(
-      unsupported
-        ? `${sourceExt || 'This format'} has to be converted, which needs ffmpeg. Install it with: sudo apt install ffmpeg`
-        : `Files over 25 MB have to be compressed, which needs ffmpeg. Install it with: sudo apt install ffmpeg`,
-    );
+  const ffmpeg = resolveBinary(Cmd.FFMPEG);
+  if (ffmpeg === null) {
+    const reason = unsupported
+      ? `${sourceExt || 'This format'} has to be converted first.`
+      : 'Files over 25 MB have to be compressed first.';
+    throw new ImportError(`${reason}\n${missingMessage(FFMPEG)}`);
   }
 
-  convert(sourcePath, paths.audioPath, tooLarge);
+  convert(ffmpeg, sourcePath, paths.audioPath, tooLarge);
   return { ...paths, converted: true };
 }
 
-function convert(source: string, target: string, compress: boolean): void {
+function convert(ffmpeg: string, source: string, target: string, compress: boolean): void {
   const args = [
     '-y',
     '-loglevel',
@@ -81,7 +84,7 @@ function convert(source: string, target: string, compress: boolean): void {
     target,
   ];
 
-  const result = spawnSync(Cmd.FFMPEG, args, { encoding: Encoding.UTF8 });
+  const result = spawnSync(ffmpeg, args, { encoding: Encoding.UTF8 });
   if (result.status !== 0) {
     if (fs.existsSync(target)) fs.rmSync(target);
     const detail = (result.stderr || '').trim().split('\n').pop() ?? 'unknown error';

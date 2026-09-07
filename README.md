@@ -12,6 +12,8 @@ sudo apt-get update
 sudo apt-get install sox libsox-fmt-all
 ```
 
+Run `transcribe-cli doctor` at any point to see what is present and what is missing.
+
 ### macOS
 ```bash
 brew install sox
@@ -85,6 +87,25 @@ same way recordings are stored. Your original file is not touched.
 
 `mp3`, `mp4`, `m4a`, `wav`, `webm`, `flac`, `ogg`, `mpeg` and `mpga` are sent as they are. Anything
 else, and anything over 25 MB, is converted first, which needs `ffmpeg` installed.
+
+---
+
+### Checking What Is Installed
+
+```bash
+transcribe-cli doctor          # what this setup needs
+transcribe-cli doctor --all    # everything, including what you are not using
+```
+
+Each tool is listed under what needs it, so a missing `ffmpeg` does not look like a problem if you
+never import files. The exit code counts only what your setup actually uses, which makes it safe in
+a script.
+
+If something is installed but not on your `PATH`, point at it directly:
+
+```bash
+TRANSCRIBE_FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg transcribe-cli -f nota.mp3
+```
 
 ---
 

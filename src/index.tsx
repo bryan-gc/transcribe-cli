@@ -18,6 +18,7 @@ import {
 } from './config/resolveOptions.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsApiKey } from './transcriber/createTranscriber.js';
+import { activeCapabilities, formatReport, runChecks } from './system/doctor.js';
 import { AVAILABLE_LANGUAGES } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,10 +39,20 @@ program
   .option('-s, --speakers', 'Detect and label who is speaking')
   .option('--local', 'Use the local WhisperX engine instead of the API')
   .option('--engine <name>', 'openai | local')
+  .option('--all', 'With doctor: list every check, not just the ones in use')
+  .argument('[command]', 'doctor — check the tools this setup needs')
   .option('--no-copy', 'Do not copy the result to the clipboard')
   .parse(process.argv);
 
 const config = ConfigManager.load();
+
+if (program.args[0] === 'doctor') {
+  const showAll = program.opts().all === true;
+  const active = activeCapabilities(config, program.opts().file);
+  const { text, failedInUse } = formatReport(runChecks(config, active), showAll);
+  process.stdout.write(`transcribe-cli doctor\n${text}\n`);
+  process.exit(failedInUse > 0 ? 1 : 0);
+}
 const basePathReady = ConfigManager.validateBasePath(config.basePath);
 
 let options: ResolvedOptions;

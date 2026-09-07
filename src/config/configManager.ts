@@ -15,6 +15,11 @@ export interface LocalWhisperConfig {
   computeType: string;
 }
 
+export interface BinPaths {
+  ffmpeg: string;
+  arecord: string;
+}
+
 export interface AppConfig {
   apiKey: string;
   basePath: string;
@@ -24,6 +29,7 @@ export interface AppConfig {
   autoCopy: boolean;
   engine: Engine;
   localWhisper: LocalWhisperConfig;
+  binPaths: BinPaths;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
@@ -43,6 +49,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     device: 'cuda',
     computeType: 'float16',
   },
+  binPaths: { ffmpeg: '', arecord: '' },
 };
 
 export class ConfigManager {
@@ -57,6 +64,7 @@ export class ConfigManager {
         ...DEFAULT_CONFIG,
         ...parsed,
         localWhisper: { ...DEFAULT_CONFIG.localWhisper, ...(parsed.localWhisper ?? {}) },
+        binPaths: { ...DEFAULT_CONFIG.binPaths, ...(parsed.binPaths ?? {}) },
       };
 
       if (config.microphonePriority.length === 0 && config.selectedMicrophone) {
