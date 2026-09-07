@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { Header } from './Header.js';
+import { PreflightPrompt } from './PreflightPrompt.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
@@ -20,14 +21,23 @@ export function ImportApp({
   filePath,
   glossary,
   diarize,
+  confirmLongAudio,
 }: {
   appConfig: AppConfig;
   filePath: string;
   glossary: string;
   diarize: boolean;
+  confirmLongAudio: boolean;
 }) {
   const { exit } = useApp();
-  const { state, actions } = useImportTranscribe(appConfig, filePath, glossary, diarize, exit);
+  const { state, actions } = useImportTranscribe(
+    appConfig,
+    filePath,
+    glossary,
+    diarize,
+    confirmLongAudio,
+    exit,
+  );
 
   const {
     statusText,
@@ -35,6 +45,8 @@ export function ImportApp({
     transcriptionResult,
     failure,
     lastRun,
+    preflight,
+    engine,
     language,
     sourceName,
     audioPath,
@@ -66,13 +78,24 @@ export function ImportApp({
           languageField(language),
           glossaryField(glossaryLabel),
           { label: 'Audio file', value: sourceName },
-          engineField(appConfig.engine, lastRun),
+          engineField(engine, lastRun),
           ...audioLengthField(lastRun),
           ...tookField(lastRun),
           ...costField(lastRun),
           clipboardField(appConfig.autoCopy, lastRun),
         ]}
       />
+
+      {preflight !== null && (
+        <PreflightPrompt
+          audioSeconds={preflight.audioSeconds}
+          rows={preflight.rows}
+          selected={preflight.selected}
+          onSelect={actions.selectPreflight}
+          onConfirm={actions.confirmPreflight}
+          onCancel={exit}
+        />
+      )}
 
       {failure !== null && (
         <Box flexDirection="column" marginTop={1}>

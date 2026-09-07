@@ -150,3 +150,9 @@ test('an unknown engine is rejected and the message lists the real ones', () => 
 test('with no flag the saved engine is kept', () => {
   assert.equal(resolveOptions({}, config({ engine: Engine.LOCAL }), {}).engine, Engine.LOCAL);
 });
+
+test('long audio asks for confirmation unless --yes or the environment says otherwise', () => {
+  assert.equal(resolveOptions({}, config(), {}).confirmLongAudio, true);
+  assert.equal(resolveOptions({ yes: true }, config(), {}).confirmLongAudio, false);
+  assert.equal(resolveOptions({}, config(), { [ENV_KEYS.YES]: '1' }).confirmLongAudio, false);
+});

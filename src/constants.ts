@@ -198,6 +198,12 @@ export const PRICING = {
   [DIARIZE_MODEL]: { perInputTokenUsd: 2.5 / 1_000_000, perOutputTokenUsd: 10 / 1_000_000 },
 } as const;
 
+export const DIARIZE_TOKENS_PER_AUDIO_MINUTE = { input: 600, output: 1932 } as const;
+
+export const PREFLIGHT_MIN_SECONDS = 5 * 60;
+
+export const HISTORY_SAMPLE_SIZE = 50 as const;
+
 export const MIN_SUBTITLE_SEC = 1.2;
 
 export const SUBTITLE_MAX_CHARS = 84;

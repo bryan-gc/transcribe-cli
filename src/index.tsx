@@ -43,6 +43,7 @@ program
   .option('--all', 'With doctor: list every check, not just the ones in use')
   .argument('[command]', 'doctor — check the tools this setup needs')
   .option('--no-copy', 'Do not copy the result to the clipboard')
+  .option('-y, --yes', 'Skip the cost confirmation shown for long audio files')
   .parse(process.argv);
 
 const config = ConfigManager.load();
@@ -103,6 +104,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
         filePath={options.file}
         glossary={options.glossary}
         diarize={options.diarize}
+        confirmLongAudio={options.confirmLongAudio}
       />
     );
   }

@@ -8,15 +8,25 @@ import {
   type TranscriptionOutcome,
 } from '../utils/runTranscription.js';
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
+import { audioDurationSeconds } from '../audio/audioDuration.js';
 import { readGlossaryContent } from '../utils/fileUtils.js';
-import type { AppConfig } from '../config/configManager.js';
-import { LANGUAGE_NAMES, RecordingKind } from '../constants.js';
+import { estimateRun, type EngineChoice, type RunEstimate } from '../utils/estimate.js';
+import { measuredSpeed, readRecentMeta } from '../utils/history.js';
+import { Engine, type AppConfig } from '../config/configManager.js';
+import { LANGUAGE_NAMES, PREFLIGHT_MIN_SECONDS, RecordingKind } from '../constants.js';
+
+export interface Preflight {
+  audioSeconds: number;
+  rows: RunEstimate[];
+  selected: number;
+}
 
 export function useImportTranscribe(
   appConfig: AppConfig,
   filePath: string,
   glossary: string,
   diarize: boolean,
+  confirmLongAudio: boolean,
   exit: () => void,
 ) {
   const [statusText, setStatusText] = useState('Preparing the file...');
@@ -24,30 +34,33 @@ export function useImportTranscribe(
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
   const [lastRun, setLastRun] = useState<TranscriptionOutcome | null>(null);
+  const [preflight, setPreflight] = useState<Preflight | null>(null);
 
-  const transcriberRef = useRef(createTranscriber(appConfig));
   const importedRef = useRef<ImportedAudio | null>(null);
+  const choiceRef = useRef<EngineChoice>({ engine: appConfig.engine, diarize });
   const startedRef = useRef(false);
 
   const language = appConfig.selectedLanguage;
 
   const transcribe = useCallback(
     async (imported: ImportedAudio) => {
+      const choice = choiceRef.current;
       const glossaryPrompt = readGlossaryContent(appConfig.basePath, glossary);
       setIsTranscribing(true);
       setFailure(null);
       setStatusText(
-        `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
+        `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''}${choice.diarize ? ' + speakers' : ''})...`,
       );
 
       try {
-        const outcome = await runTranscription(transcriberRef.current, {
+        const transcriber = createTranscriber({ ...appConfig, engine: choice.engine });
+        const outcome = await runTranscription(transcriber, {
           audioPath: imported.audioPath,
           srtPath: imported.srtPath,
           textPath: imported.textPath,
           language,
           glossary: glossaryPrompt,
-          diarize,
+          diarize: choice.diarize,
           diarizedPath: imported.diarizedPath,
           metaPath: imported.metaPath,
           source: RecordingKind.IMPORTED,
@@ -66,7 +79,7 @@ export function useImportTranscribe(
         setIsTranscribing(false);
       }
     },
-    [appConfig, glossary, language, diarize, exit],
+    [appConfig, glossary, language, exit],
   );
 
   useEffect(() => {
@@ -83,8 +96,15 @@ export function useImportTranscribe(
       setStatusText('❌ Could not prepare the file.');
       return;
     }
+
+    const audioSeconds = audioDurationSeconds(imported.audioPath);
+    if (confirmLongAudio && audioSeconds !== undefined && audioSeconds >= PREFLIGHT_MIN_SECONDS) {
+      setPreflight(buildPreflight(audioSeconds, choiceRef.current, appConfig));
+      setStatusText('Long audio — check the cost before sending it.');
+      return;
+    }
     void transcribe(imported);
-  }, [appConfig.basePath, filePath, transcribe]);
+  }, [appConfig, confirmLongAudio, filePath, transcribe]);
 
   return {
     state: {
@@ -93,6 +113,8 @@ export function useImportTranscribe(
       transcriptionResult,
       failure,
       lastRun,
+      preflight,
+      engine: choiceRef.current.engine,
       language,
       glossary,
       sourceName: path.basename(filePath),
@@ -104,6 +126,32 @@ export function useImportTranscribe(
       retry: () => {
         if (importedRef.current) void transcribe(importedRef.current);
       },
+      selectPreflight: (selected: number) => {
+        setPreflight((p) => (p ? { ...p, selected } : p));
+      },
+      confirmPreflight: () => {
+        if (!preflight || !importedRef.current) return;
+        const row = preflight.rows[preflight.selected];
+        choiceRef.current = { engine: row.engine, diarize: row.diarize };
+        setPreflight(null);
+        void transcribe(importedRef.current);
+      },
     },
   };
+}
+
+function buildPreflight(audioSeconds: number, choice: EngineChoice, config: AppConfig): Preflight {
+  const speedOf = measuredSpeed(readRecentMeta(config.basePath));
+  const localModel = config.localWhisper.model;
+  const choices: EngineChoice[] = [
+    { engine: Engine.OPENAI, diarize: false },
+    { engine: Engine.OPENAI, diarize: true },
+    { engine: Engine.LOCAL, diarize: choice.engine === Engine.LOCAL && choice.diarize },
+  ];
+  const rows = choices.map((c) => estimateRun(audioSeconds, c, localModel, speedOf));
+  const selected = Math.max(
+    0,
+    rows.findIndex((r) => r.engine === choice.engine && r.diarize === choice.diarize),
+  );
+  return { audioSeconds, rows, selected };
 }

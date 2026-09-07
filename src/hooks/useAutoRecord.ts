@@ -13,6 +13,9 @@ import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
 import { RecordingClock, formatClock } from '../utils/recordingClock.js';
+import { estimateRun, formatEstimatedCost, formatEstimatedTime } from '../utils/estimate.js';
+import { measuredSpeed, readRecentMeta } from '../utils/history.js';
+import { Engine } from '../config/configManager.js';
 import {
   HOTKEY_PAUSE_LABEL,
   LANGUAGE_NAMES,
@@ -47,6 +50,7 @@ export function useAutoRecord(
   const transcriberRef = useRef<ITranscriber | null>(null);
   const clockRef = useRef(new RecordingClock());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speedOfRef = useRef(measuredSpeed(readRecentMeta(appConfig.basePath)));
 
   const activeLanguage = appConfig.selectedLanguage;
   const { device: activeMic, isFallback: micIsFallback } = resolveMicDevice(
@@ -125,7 +129,26 @@ export function useAutoRecord(
     const label = isPaused ? '⏸  Paused' : '🔴 Recording';
     const micNote = micIsFallback ? ` with ${activeMic.label} (preferred mic not connected)` : '';
     const help = `[${HOTKEY_PAUSE_LABEL}] ${isPaused ? 'resume' : 'pause'} · [Enter] stop and transcribe`;
-    return `${label}   ${formatClock(elapsedSeconds)}${micNote}   ·   ${help}`;
+    return `${label}   ${formatClock(elapsedSeconds)}${micNote}${liveEstimate()}   ·   ${help}`;
+  };
+
+  const liveEstimate = () => {
+    if (elapsedSeconds === 0) return '';
+    const localModel = appConfig.localWhisper.model;
+    const speedOf = speedOfRef.current;
+    const api = estimateRun(
+      elapsedSeconds,
+      { engine: Engine.OPENAI, diarize },
+      localModel,
+      speedOf,
+    );
+    const local = estimateRun(
+      elapsedSeconds,
+      { engine: Engine.LOCAL, diarize },
+      localModel,
+      speedOf,
+    );
+    return `   ·   ${formatEstimatedCost(api.cost)} with ${api.model}   ·   ${formatEstimatedTime(local)} locally`;
   };
 
   const transcribe = async () => {

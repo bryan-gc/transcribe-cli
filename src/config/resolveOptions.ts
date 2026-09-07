@@ -11,6 +11,7 @@ export interface CliFlags {
   language?: string;
   glossary?: string;
   copy?: boolean;
+  yes?: boolean;
 }
 
 export interface ResolvedOptions {
@@ -21,6 +22,7 @@ export interface ResolvedOptions {
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
+  confirmLongAudio: boolean;
 }
 
 export const ENV_KEYS = {
@@ -29,6 +31,7 @@ export const ENV_KEYS = {
   COPY: 'TRANSCRIBE_COPY',
   SPEAKERS: 'TRANSCRIBE_SPEAKERS',
   ENGINE: 'TRANSCRIBE_ENGINE',
+  YES: 'TRANSCRIBE_YES',
 } as const;
 
 export class OptionError extends Error {}
@@ -63,6 +66,7 @@ export function resolveOptions(
       config.autoCopy,
       false,
     ),
+    confirmLongAudio: !firstDefined(flags.yes, parseBool(env[ENV_KEYS.YES]), false),
   };
 }
 
