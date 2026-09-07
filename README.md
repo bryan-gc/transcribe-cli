@@ -55,17 +55,20 @@ Optimized for quick usage. By default, launching the app instantly starts record
 transcribe-cli
 ```
 
-- **Recording:** Starts immediately upon launch.
+- **Recording:** Starts immediately upon launch. The status line shows the recorded time, what the
+  audio would cost through the API so far, and how long it would take to transcribe locally.
+- **Pause:** Press `space` to pause and again to resume. The clock counts recorded audio, not the
+  time you spent paused.
 - **Stop & Transcribe:** Simply press `Enter`. The tool will stop recording, run the transcription, copy it to your clipboard (if enabled in your config), and exit automatically.
 
 ### 2. Manual Menu Mode
 
-If you prefer the interactive terminal menu to change settings (Microphone, Language, Glossary, etc.) on the fly before recording, use the `--manual` flag:
+If you prefer the interactive terminal menu to change settings (Microphone, Language, Glossary, etc.) on the fly before recording, use the `--config` flag:
 
 ```bash
-transcribe-cli --manual
+transcribe-cli --config
 # or
-transcribe-cli -m
+transcribe-cli -c
 ```
 
 Navigate the interactive menu with:
@@ -87,6 +90,11 @@ same way recordings are stored. Your original file is not touched.
 
 `mp3`, `mp4`, `m4a`, `wav`, `webm`, `flac`, `ogg`, `mpeg` and `mpga` are sent as they are. Anything
 else, and anything over 25 MB, is converted first, which needs `ffmpeg` installed.
+
+A file of five minutes or more stops on a short table first: the estimated cost and time with each
+engine, so a two-hour meeting is not sent to the API by accident. `Enter` transcribes, `e` switches
+engine, `q` cancels. Pass `--yes` to skip it in scripts. Times start as a rough guess and improve as
+the tool learns how fast this machine and your connection actually are.
 
 ---
 
@@ -113,7 +121,7 @@ TRANSCRIBE_FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg transcribe-cli -f nota.mp3
 
 | Option | What it does |
 |---|---|
-| `-m, --manual` | Open the interactive menu instead of recording straight away |
+| `-c, --config` | Open the configuration menu instead of recording straight away |
 | `-f, --file <path>` | Transcribe an existing audio file instead of recording |
 | `-s, --speakers` | Label who is speaking, for recordings with more than one voice |
 | `--local` | Transcribe on this machine with WhisperX instead of the API |
@@ -121,6 +129,7 @@ TRANSCRIBE_FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg transcribe-cli -f nota.mp3
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
 | `--no-copy` | Do not copy the result to the clipboard on this run |
+| `-y, --yes` | Skip the cost confirmation shown for long audio files (`TRANSCRIBE_YES=1` does the same) |
 | `-v, --version` | Output the current version |
 | `-h, --help` | Display help |
 
@@ -186,8 +195,8 @@ If you are developing the tool locally and running it via `npm run start`, you m
 npm run start
 
 # Manual Menu Mode
-npm run start -- --manual
-npm run start -- -m
+npm run start -- --config
+npm run start -- -c
 
 # View Help
 npm run start -- --help
