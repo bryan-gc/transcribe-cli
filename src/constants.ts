@@ -22,6 +22,24 @@ export enum RecordingKind {
  */
 export const LEGACY_DATA_DIR = 'tmp' as const;
 
+/**
+ * Extensions the transcription API accepts as an upload. Anything else has to be converted first.
+ */
+export const SUPPORTED_IMPORT_EXT = new Set([
+  '.mp3',
+  '.mp4',
+  '.mpeg',
+  '.mpga',
+  '.m4a',
+  '.wav',
+  '.webm',
+  '.flac',
+  '.ogg',
+]);
+
+/** Hard limit the API puts on an uploaded file. Larger recordings are compressed first. */
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
 /** File extensions the app reads or writes. */
 export const EXT = {
   AUDIO: '.wav',
@@ -67,6 +85,7 @@ export enum Cmd {
   AFPLAY = 'afplay',
   PW_DUMP = 'pw-dump',
   SYSTEM_PROFILER = 'system_profiler',
+  FFMPEG = 'ffmpeg',
 }
 
 export enum Signal {

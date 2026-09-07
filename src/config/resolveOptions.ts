@@ -4,6 +4,7 @@ import type { AppConfig } from './configManager.js';
 /** Raw values as they arrive from commander, before any precedence is applied. */
 export interface CliFlags {
   manual?: boolean;
+  file?: string;
   language?: string;
   glossary?: string;
   copy?: boolean;
@@ -11,6 +12,8 @@ export interface CliFlags {
 
 export interface ResolvedOptions {
   manual: boolean;
+  /** Path of an existing audio file to transcribe instead of recording. */
+  file?: string;
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
@@ -57,6 +60,7 @@ export function resolveOptions(
 ): ResolvedOptions {
   return {
     manual: flags.manual === true,
+    file: flags.file,
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
     copyToClipboard: firstDefined(

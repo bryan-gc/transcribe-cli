@@ -6,21 +6,49 @@ import { DIR, EXT, Encoding, RecordingKind, getPaths } from '../constants.js';
  * Generates the audio, srt and text paths for one transcription, grouped by day under the
  * directory for its kind, and creates that directory.
  */
+export interface TimestampPathOptions {
+  now?: Date;
+  /** Name of the file an import came from; kept in the stem so the copy stays recognisable. */
+  originalName?: string;
+  /** Extension for the audio itself. Imports keep their own; recordings are always wav. */
+  audioExt?: string;
+}
+
 export function getTimestampPaths(
   basePath: string,
   kind: RecordingKind = RecordingKind.RECORDED,
-  now: Date = new Date(),
+  { now = new Date(), originalName, audioExt = EXT.AUDIO }: TimestampPathOptions = {},
 ) {
   const pad = (n: number) => String(n).padStart(2, '0');
   const folder = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const base = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const stem = originalName ? `${time}__${sanitizeName(originalName)}` : time;
   const dir = path.resolve(basePath, DIR.DATA, kind, folder);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return {
-    audioPath: path.join(dir, `${base}${EXT.AUDIO}`),
-    srtPath: path.join(dir, `${base}${EXT.SUBTITLES}`),
-    textPath: path.join(dir, `${base}${EXT.TEXT}`),
+    audioPath: path.join(dir, `${stem}${audioExt}`),
+    srtPath: path.join(dir, `${stem}${EXT.SUBTITLES}`),
+    textPath: path.join(dir, `${stem}${EXT.TEXT}`),
   };
+}
+
+/**
+ * Turns the name of an imported file into something safe to put in a path.
+ *
+ * Files arriving from a phone bring spaces, accents, parentheses and the occasional 200-character
+ * name. Left alone they produce paths that are awkward to type and, on the wrong filesystem,
+ * invalid. The extension is dropped because the caller decides it.
+ */
+export function sanitizeName(name: string): string {
+  const stem = path.basename(name, path.extname(name));
+  const ascii = stem.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const slug = ascii
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+  return slug || 'audio';
 }
 
 /**

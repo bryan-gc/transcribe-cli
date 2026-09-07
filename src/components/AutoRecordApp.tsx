@@ -6,9 +6,9 @@ import { useAutoRecord } from '../hooks/useAutoRecord.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
 
-export function AutoRecordApp({ appConfig }: { appConfig: AppConfig }) {
+export function AutoRecordApp({ appConfig, glossary }: { appConfig: AppConfig; glossary: string }) {
   const { exit } = useApp();
-  const { state, actions } = useAutoRecord(appConfig, exit);
+  const { state, actions } = useAutoRecord(appConfig, glossary, exit);
 
   const {
     statusText,
