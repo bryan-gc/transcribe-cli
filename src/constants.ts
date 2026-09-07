@@ -73,6 +73,9 @@ export const HOTKEY_EXIT = 'c' as const;
 /** Duration of a single tick in the recording countdown timer (ms). */
 export const RECORDING_TICK_MS = 1000 as const;
 
+/** Size of a wav header on its own: a file this small contains no audio. */
+export const WAV_HEADER_BYTES = 44 as const;
+
 export enum Platform {
   LINUX = 'linux',
   DARWIN = 'darwin',
@@ -87,6 +90,8 @@ export enum Cmd {
   PW_DUMP = 'pw-dump',
   SYSTEM_PROFILER = 'system_profiler',
   FFMPEG = 'ffmpeg',
+  XCLIP = 'xclip',
+  XSEL = 'xsel',
 }
 
 export enum Signal {

@@ -119,12 +119,16 @@ export function useAutoRecord(
     setIsTranscribing(true);
     setStatusText('⏹️  Stopped recording. Saving file...');
 
-    await recorderRef.current.stop();
+    // Kept past the stop: the recorder is the only thing that knows why nothing came out, and the
+    // reference is cleared right after so a second Enter cannot stop an already stopped recording.
+    const recorder = recorderRef.current;
+    await recorder.stop();
     recorderRef.current = null;
 
-    if (!fs.existsSync(currentAudioPath)) {
+    const recordingFailure = recorder.getFailure();
+    if (recordingFailure) {
       setIsTranscribing(false);
-      setFailure('The recording produced no audio file. Check the microphone with --manual.');
+      setFailure(recordingFailure.message);
       setStatusText('❌ Nothing was recorded.');
       return;
     }
