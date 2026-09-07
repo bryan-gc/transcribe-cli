@@ -18,13 +18,13 @@
   },
   "type": "module",
   "scripts": {
-    "start": "tsx src/index.tsx",
+    "start": "node --env-file-if-exists=.env --import tsx src/index.tsx",
     "build": "rm -rf dist && tsc",
     "prepublishOnly": "npm run build",
-    "lint": "eslint 'src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "format": "prettier --write 'src/**/*.{ts,tsx}'",
-    "format:check": "prettier --check 'src/**/*.{ts,tsx}'",
+    "lint": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.ts' --fix",
+    "format": "prettier --write 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "test:watch": "node --import tsx --test --watch tests/**/*.test.ts"
   },

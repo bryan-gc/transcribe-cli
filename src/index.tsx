@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import React, { useState, useEffect } from 'react';
-import { render, Box, Text } from 'ink';
+import React, { useState } from 'react';
+import { render } from 'ink';
 import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
@@ -9,6 +9,14 @@ import { App } from './components/App.js';
 import { AutoRecordApp } from './components/AutoRecordApp.js';
 import { SetupPrompt } from './components/SetupPrompt.js';
 import { ConfigManager, type AppConfig } from './config/configManager.js';
+import {
+  cliFlags,
+  OptionError,
+  resolveOptions,
+  type ResolvedOptions,
+} from './config/resolveOptions.js';
+import { loadGlossaryFiles } from './utils/fileUtils.js';
+import { AVAILABLE_LANGUAGES } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,47 +30,52 @@ program
   .description(pkg.description)
   .version(pkg.version, '-v, --version', 'Output the current version')
   .option('-m, --manual', 'Open the interactive manual menu')
+  .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
+  .option('-g, --glossary <name>', 'Glossary to use as context for this run')
+  .option('--no-copy', 'Do not copy the result to the clipboard')
   .parse(process.argv);
 
-const options = program.opts();
-const isManualMode = Boolean(options.manual);
+const config = ConfigManager.load();
+const needsSetup = !config.apiKey || !ConfigManager.validateBasePath(config.basePath);
 
-function Root({ manualMode }: { manualMode: boolean }) {
-  const [config, setConfig] = useState<AppConfig | null>(null);
-  const [needsSetup, setNeedsSetup] = useState(false);
+let options: ResolvedOptions;
+try {
+  const glossaries = needsSetup ? [] : loadGlossaryFiles(config.basePath);
+  const flags = cliFlags(program.opts(), (key) => program.getOptionValueSource(key));
+  options = resolveOptions(flags, config, process.env, glossaries);
+} catch (error) {
+  if (!(error instanceof OptionError)) throw error;
+  process.stderr.write(`${error.message}\n`);
+  process.exit(1);
+}
 
-  useEffect(() => {
-    const loadedConfig = ConfigManager.load();
-    if (!loadedConfig.apiKey || !ConfigManager.validateBasePath(loadedConfig.basePath)) {
-      setNeedsSetup(true);
-      setConfig(loadedConfig);
-    } else {
-      ConfigManager.initializeBasePath(loadedConfig.basePath);
-      setConfig(loadedConfig);
-    }
-  }, []);
+if (!needsSetup) {
+  ConfigManager.initializeBasePath(config.basePath);
+}
 
-  if (!config) {
-    return (
-      <Box padding={1}>
-        <Text>Loading configuration...</Text>
-      </Box>
-    );
-  }
+function Root({ initialConfig, options }: { initialConfig: AppConfig; options: ResolvedOptions }) {
+  const [appConfig, setAppConfig] = useState(initialConfig);
+  const [pendingSetup, setPendingSetup] = useState(needsSetup);
 
-  if (needsSetup) {
+  if (pendingSetup) {
     return (
       <SetupPrompt
-        initialConfig={config}
+        initialConfig={appConfig}
         onComplete={(c) => {
-          setConfig(c);
-          setNeedsSetup(false);
+          setAppConfig(c);
+          setPendingSetup(false);
         }}
       />
     );
   }
 
-  return manualMode ? <App appConfig={config} /> : <AutoRecordApp appConfig={config} />;
+  const effective: AppConfig = {
+    ...appConfig,
+    selectedLanguage: options.language,
+    autoCopy: options.copyToClipboard,
+  };
+
+  return options.manual ? <App appConfig={effective} /> : <AutoRecordApp appConfig={effective} />;
 }
 
-render(<Root manualMode={isManualMode} />);
+render(<Root initialConfig={config} options={options} />);
