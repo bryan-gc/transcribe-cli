@@ -6,6 +6,8 @@ import path from 'node:path';
 import {
   runTranscription,
   describeTranscriptionError,
+  describeOutcome,
+  ClipboardOutcome,
   type TranscriptionJob,
 } from '../src/utils/runTranscription.js';
 import { MockTranscriber } from '../src/transcriber/MockTranscriber.js';
@@ -29,9 +31,10 @@ function job(over: Partial<TranscriptionJob> = {}): TranscriptionJob {
 
 test('writes the subtitles and the plain text, and returns the text', async () => {
   const j = job();
-  const text = await runTranscription(new MockTranscriber(SRT), j);
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
 
-  assert.equal(text, 'hola que tal');
+  assert.equal(outcome.text, 'hola que tal');
+  assert.equal(outcome.clipboard, ClipboardOutcome.OFF);
   assert.equal(fs.readFileSync(j.srtPath, 'utf-8'), SRT);
   assert.equal(fs.readFileSync(j.textPath, 'utf-8'), 'hola que tal');
 });
@@ -51,8 +54,8 @@ test('a retry after a failure succeeds without re-recording', async () => {
   await assert.rejects(() => runTranscription(transcriber, j), /network down/);
   assert.ok(fs.existsSync(j.audioPath), 'the audio is still there to retry with');
 
-  const text = await runTranscription(transcriber, j);
-  assert.equal(text, 'hola que tal');
+  const outcome = await runTranscription(transcriber, j);
+  assert.equal(outcome.text, 'hola que tal');
   assert.equal(transcriber.calls.length, 2);
   assert.equal(transcriber.calls[1]!.audioFilePath, j.audioPath);
 });
@@ -103,4 +106,25 @@ test('a connection failure suggests retrying rather than showing the transport e
 
 test('anything unrecognised keeps its own message rather than being hidden', () => {
   assert.equal(describeTranscriptionError(new Error('something specific')), 'something specific');
+});
+
+test('a clipboard that fails does not discard a good transcription', async () => {
+  const j = job({ copyToClipboard: true });
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+
+  assert.equal(outcome.text, 'hola que tal', 'the text survives whatever the clipboard did');
+  assert.ok(fs.existsSync(j.textPath), 'and so do the files');
+  assert.ok([ClipboardOutcome.COPIED, ClipboardOutcome.FAILED].includes(outcome.clipboard));
+});
+
+test('the status distinguishes copied from merely enabled', () => {
+  assert.match(describeOutcome({ text: 'x', clipboard: ClipboardOutcome.COPIED }), /copied/);
+  assert.match(
+    describeOutcome({ text: 'x', clipboard: ClipboardOutcome.FAILED, clipboardError: 'no xclip' }),
+    /Clipboard: no xclip/,
+  );
+  assert.doesNotMatch(
+    describeOutcome({ text: 'x', clipboard: ClipboardOutcome.OFF }),
+    /clipboard/i,
+  );
 });

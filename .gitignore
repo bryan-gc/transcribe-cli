@@ -14,3 +14,6 @@ tests/fixtures/*.m4a
 
 # sandbox de pruebas locales
 .sandbox/
+
+# artefactos locales de prueba (venv de whisperx, audios)
+.local/

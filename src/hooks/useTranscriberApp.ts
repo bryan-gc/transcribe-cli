@@ -3,7 +3,11 @@ import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { listMicDevices, resolveMicDevice, type MicDevice } from '../audio/micDevices.js';
 import { createTranscriber } from '../transcriber/createTranscriber.js';
-import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
+import {
+  describeTranscriptionError,
+  describeOutcome,
+  runTranscription,
+} from '../utils/runTranscription.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
 import {
@@ -152,7 +156,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
             `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}) - Initializing...`,
           );
           try {
-            const cleanText = await runTranscription(transcriber.current, {
+            const outcome = await runTranscription(transcriber.current, {
               audioPath: currentAudioPath,
               srtPath: currentSrtPath,
               textPath: currentTextPath,
@@ -162,12 +166,8 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
             });
 
-            setTranscriptionResult(cleanText);
-            setStatusText(
-              clipboardEnabled
-                ? '✅ Transcription done — copied to clipboard.'
-                : '✅ Transcription completed and saved.',
-            );
+            setTranscriptionResult(outcome.text);
+            setStatusText(describeOutcome(outcome));
           } catch (err: unknown) {
             setStatusText(`❌ ${describeTranscriptionError(err)} Press [t] to retry.`);
           } finally {

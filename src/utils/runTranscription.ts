@@ -18,10 +18,22 @@ export interface TranscriptionJob {
   onProgress?: (status: string) => void;
 }
 
+export enum ClipboardOutcome {
+  OFF = 'off',
+  COPIED = 'copied',
+  FAILED = 'failed',
+}
+
+export interface TranscriptionOutcome {
+  text: string;
+  clipboard: ClipboardOutcome;
+  clipboardError?: string;
+}
+
 export async function runTranscription(
   transcriber: ITranscriber,
   job: TranscriptionJob,
-): Promise<string> {
+): Promise<TranscriptionOutcome> {
   if (!fs.existsSync(job.audioPath)) {
     throw new Error(`Audio file not found: ${job.audioPath}`);
   }
@@ -48,8 +60,28 @@ export async function runTranscription(
     fs.writeFileSync(job.diarizedPath, result.raw, Encoding.UTF8);
   }
 
-  if (job.copyToClipboard) copyTextToClipboard(cleanText);
-  return cleanText;
+  if (!job.copyToClipboard) return { text: cleanText, clipboard: ClipboardOutcome.OFF };
+
+  try {
+    await copyTextToClipboard(cleanText);
+    return { text: cleanText, clipboard: ClipboardOutcome.COPIED };
+  } catch (error) {
+    return {
+      text: cleanText,
+      clipboard: ClipboardOutcome.FAILED,
+      clipboardError: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export function describeOutcome(outcome: TranscriptionOutcome): string {
+  if (outcome.clipboard === ClipboardOutcome.COPIED) {
+    return '✅ Transcription done — copied to clipboard.';
+  }
+  if (outcome.clipboard === ClipboardOutcome.FAILED) {
+    return `✅ Transcription saved. ⚠️ Clipboard: ${outcome.clipboardError}`;
+  }
+  return '✅ Transcription completed and saved.';
 }
 
 export function describeTranscriptionError(error: unknown): string {

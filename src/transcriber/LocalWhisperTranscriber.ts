@@ -49,18 +49,19 @@ export class LocalWhisperTranscriber implements ITranscriber {
 
   private run(args: string[], onProgress?: (status: string) => void): Promise<void> {
     return new Promise((resolve, reject) => {
-      onProgress?.('Loading the local model (the first run downloads it)...');
+      onProgress?.(
+        `Transcribing locally with ${this.config.model} (the first run loads the model)...`,
+      );
       const child = spawn(this.config.binPath, args, {
         stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.PIPE],
       });
       this.process = child;
 
-      let lastLine = '';
+      const errorOutput: string[] = [];
       child.stderr?.on('data', (chunk: Buffer) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
-        if (lines.length === 0) return;
-        lastLine = lines[lines.length - 1]!.trim();
-        onProgress?.(lastLine.slice(0, 80));
+        for (const line of chunk.toString().split('\n')) {
+          if (line.trim() !== '') errorOutput.push(line.trimEnd());
+        }
       });
 
       child.on(ProcessEvent.ERROR, (error) => {
@@ -70,10 +71,21 @@ export class LocalWhisperTranscriber implements ITranscriber {
       child.on(ProcessEvent.CLOSE, (code) => {
         this.process = null;
         if (code === 0) return resolve();
-        reject(new LocalWhisperError(`WhisperX exited with code ${code}: ${lastLine}`));
+        reject(
+          new LocalWhisperError(`WhisperX exited with code ${code}: ${summarize(errorOutput)}`),
+        );
       });
     });
   }
+}
+
+const PYTHON_NOISE =
+  /^\s*(warn(ings)?\.warn\(|>>>|import torch|torch\.|See https|It can be re-enabled|Lightning automatically)/;
+
+function summarize(lines: string[]): string {
+  const meaningful = lines.filter((line) => !PYTHON_NOISE.test(line) && !/Warning:/.test(line));
+  const chosen = meaningful.length > 0 ? meaningful : lines;
+  return chosen.slice(-2).join(' ').slice(0, 200) || 'no output';
 }
 
 export function buildArgs(

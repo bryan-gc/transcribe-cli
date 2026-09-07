@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import path from 'path';
 import { createTranscriber } from '../transcriber/createTranscriber.js';
-import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
+import {
+  describeTranscriptionError,
+  describeOutcome,
+  runTranscription,
+} from '../utils/runTranscription.js';
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
 import { readGlossaryContent } from '../utils/fileUtils.js';
 import type { AppConfig } from '../config/configManager.js';
@@ -35,7 +39,7 @@ export function useImportTranscribe(
       );
 
       try {
-        const cleanText = await runTranscription(transcriberRef.current, {
+        const outcome = await runTranscription(transcriberRef.current, {
           audioPath: imported.audioPath,
           srtPath: imported.srtPath,
           textPath: imported.textPath,
@@ -47,7 +51,7 @@ export function useImportTranscribe(
           onProgress: (msg) => setStatusText(`⏳ ${msg}`),
         });
 
-        setTranscriptionResult(cleanText);
+        setTranscriptionResult(outcome.text);
         setStatusText(
           appConfig.autoCopy
             ? '✅ Transcription done — copied to clipboard.'

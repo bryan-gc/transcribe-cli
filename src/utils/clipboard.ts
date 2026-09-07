@@ -15,47 +15,41 @@ const ARGS_LINUX_SECONDARY = ['--clipboard', '--input'];
 const STDIO_IGNORE: StdioOptions = ['pipe', 'ignore', 'ignore'];
 const EVENT_ERROR = 'error';
 
-/**
- * Copies text to the system clipboard asynchronously.
- * Supports Linux (xclip / xsel), macOS (pbcopy) and Windows (clip).
- * Fails silently if no clipboard tool is available.
- *
- * We use spawn instead of execSync because tools like xclip on Linux
- * can fork into the background and keep the process alive, which causes
- * execSync to hang forever and freeze the application UI.
- */
-export function copyTextToClipboard(text: string): void {
+export class ClipboardError extends Error {}
+
+export function copyTextToClipboard(text: string): Promise<void> {
   const platform = os.platform();
-  const getCmdArgs = (): { cmd: string; args: string[] } => {
-    if (platform === PLATFORM_MAC) return { cmd: CMD_MAC, args: [] };
-    if (platform === PLATFORM_WIN) return { cmd: CMD_WIN, args: [] };
-    return { cmd: CMD_LINUX_PRIMARY, args: ARGS_LINUX_PRIMARY };
-  };
+  if (platform === PLATFORM_MAC) return write(CMD_MAC, [], text);
+  if (platform === PLATFORM_WIN) return write(CMD_WIN, [], text);
 
-  const { cmd, args } = getCmdArgs();
+  return write(CMD_LINUX_PRIMARY, ARGS_LINUX_PRIMARY, text).catch(() =>
+    write(CMD_LINUX_SECONDARY, ARGS_LINUX_SECONDARY, text).catch(() => {
+      throw new ClipboardError(
+        `Could not copy: neither ${CMD_LINUX_PRIMARY} nor ${CMD_LINUX_SECONDARY} is available. Run transcribe-cli doctor.`,
+      );
+    }),
+  );
+}
 
-  try {
-    const proc = spawn(cmd, args, { stdio: STDIO_IGNORE });
+function write(cmd: string, args: string[], text: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      if (error) reject(error);
+      else resolve();
+    };
 
-    proc.on(EVENT_ERROR, () => {
-      if (cmd === CMD_LINUX_PRIMARY) {
-        // Fallback to xsel if xclip fails on Linux
-        const fallback = spawn(CMD_LINUX_SECONDARY, ARGS_LINUX_SECONDARY, {
-          stdio: STDIO_IGNORE,
-        });
-        fallback.on(EVENT_ERROR, () => {});
-        if (fallback.stdin) {
-          fallback.stdin.write(text);
-          fallback.stdin.end();
-        }
-      }
-    });
+    try {
+      const proc = spawn(cmd, args, { stdio: STDIO_IGNORE });
+      proc.on(EVENT_ERROR, (error: Error) => finish(error));
 
-    if (proc.stdin) {
-      proc.stdin.write(text);
-      proc.stdin.end();
+      if (!proc.stdin) return finish(new ClipboardError(`${cmd} accepted no input.`));
+      proc.stdin.on(EVENT_ERROR, (error: Error) => finish(error));
+      proc.stdin.end(text, () => finish());
+    } catch (error) {
+      finish(error instanceof Error ? error : new Error(String(error)));
     }
-  } catch {
-    // Silently ignore clipboard errors
-  }
+  });
 }

@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { AudioRecorder } from '../audio/recorder.js';
 import { createTranscriber } from '../transcriber/createTranscriber.js';
 import type { ITranscriber } from '../transcriber/ITranscriber.js';
-import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
+import {
+  describeTranscriptionError,
+  describeOutcome,
+  runTranscription,
+} from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
@@ -78,7 +82,7 @@ export function useAutoRecord(
     );
 
     try {
-      const cleanText = await runTranscription(transcriberRef.current, {
+      const outcome = await runTranscription(transcriberRef.current, {
         audioPath: currentAudioPath,
         srtPath: currentSrtPath,
         textPath: currentTextPath,
@@ -90,12 +94,8 @@ export function useAutoRecord(
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),
       });
 
-      setTranscriptionResult(cleanText);
-      setStatusText(
-        appConfig.autoCopy
-          ? '✅ Transcription done — copied to clipboard.'
-          : '✅ Transcription completed and saved.',
-      );
+      setTranscriptionResult(outcome.text);
+      setStatusText(describeOutcome(outcome));
       setTimeout(exit, 500);
     } catch (err: unknown) {
       setFailure(describeTranscriptionError(err));
