@@ -7,7 +7,14 @@ import { MicTest } from './MicTest.js';
 import { Header } from './Header.js';
 import { useTranscriberApp } from '../hooks/useTranscriberApp.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
-import { clipboardField, engineField, glossaryField, languageField } from './statusFields.js';
+import {
+  clipboardField,
+  engineField,
+  engineLabel,
+  engineOption,
+  glossaryField,
+  languageField,
+} from './statusFields.js';
 import { Engine, type AppConfig } from '../config/configManager.js';
 import {
   EXT,
@@ -187,15 +194,18 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
       {viewMode === ViewMode.ENGINES && (
         <Picker
           title="Select Engine"
-          options={[
-            { label: 'OpenAI API', value: Engine.OPENAI },
-            { label: 'Local · WhisperX', value: Engine.LOCAL },
-          ]}
+          options={[Engine.OPENAI, Engine.LOCAL].map((engine) => ({
+            label: engineOption(appConfig, engine).label,
+            value: engine,
+          }))}
           onSelect={(value) => {
             const engine = value as Engine;
+            const { ready, blocker } = engineOption(appConfig, engine);
             setActiveEngine(engine);
             saveConfig({ engine });
-            setStatusText(`Engine set to ${engineField(engine, null).value}.`);
+            setStatusText(
+              ready ? `Engine set to ${engineLabel(engine)}.` : `Engine set, but ${blocker}`,
+            );
             setViewMode(ViewMode.MAIN);
           }}
           onCancel={() => setViewMode(ViewMode.MAIN)}

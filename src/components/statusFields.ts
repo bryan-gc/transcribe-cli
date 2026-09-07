@@ -1,5 +1,6 @@
 import type { StatusField } from './Header.js';
-import { Engine } from '../config/configManager.js';
+import { Engine, type AppConfig } from '../config/configManager.js';
+import { engineBlockers } from '../system/doctor.js';
 import { LANGUAGE_NAMES, type LanguageCode } from '../constants.js';
 import {
   ClipboardOutcome,
@@ -16,11 +17,27 @@ export function glossaryField(label: string): StatusField {
   return { label: 'Glossary', value: label };
 }
 
+export function engineLabel(engine: Engine): string {
+  return engine === Engine.LOCAL ? 'Local · WhisperX' : 'OpenAI API';
+}
+
+export function engineOption(
+  config: AppConfig,
+  engine: Engine,
+): { label: string; ready: boolean; blocker: string } {
+  const missing = engineBlockers({ ...config, engine })[0];
+  if (!missing) return { label: engineLabel(engine), ready: true, blocker: '' };
+  return {
+    label: `${engineLabel(engine)}  —  not ready (${missing.name})`,
+    ready: false,
+    blocker: `${missing.name} is missing${missing.remedy ? `. Fix it with ${missing.remedy}` : ''}.`,
+  };
+}
+
 export function engineField(engine: Engine, run: TranscriptionOutcome | null): StatusField {
-  const configured = engine === Engine.LOCAL ? 'Local · WhisperX' : 'OpenAI API';
   return {
     label: 'Engine',
-    value: run ? `${describeEngine(run.engine)} · ${run.model}` : configured,
+    value: run ? `${describeEngine(run.engine)} · ${run.model}` : engineLabel(engine),
   };
 }
 

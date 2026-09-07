@@ -76,7 +76,7 @@ function engineChecks(
         ok: config.apiKey !== '',
         detail: config.apiKey !== '' ? 'configured' : 'not set',
         inUse: active.has(Capability.ENGINE_OPENAI),
-        remedy: 'transcribe-cli setup',
+        remedy: 'transcribe-cli -c',
       },
     ];
   }
@@ -133,9 +133,21 @@ export function formatReport(
   return { text: lines.join('\n'), failedInUse, failedUnused };
 }
 
+export function engineCapability(engine: Engine): Capability {
+  return engine === Engine.LOCAL ? Capability.ENGINE_LOCAL : Capability.ENGINE_OPENAI;
+}
+
+export function engineBlockers(config: AppConfig, sources: ResolveSources = {}): CheckResult[] {
+  const capability = engineCapability(config.engine);
+  return runChecks(config, new Set([capability]), sources)
+    .filter((group) => group.capability === capability)
+    .flatMap((group) => group.checks)
+    .filter((check) => !check.ok);
+}
+
 export function activeCapabilities(config: AppConfig, file?: string): Set<Capability> {
   const active = new Set<Capability>([file ? Capability.IMPORT : Capability.RECORD]);
   if (config.autoCopy) active.add(Capability.CLIPBOARD);
-  active.add(config.engine === Engine.LOCAL ? Capability.ENGINE_LOCAL : Capability.ENGINE_OPENAI);
+  active.add(engineCapability(config.engine));
   return active;
 }

@@ -85,7 +85,7 @@ info "Installing whisperx (this pulls torch and CUDA wheels: expect around 7 GB 
 ok "WhisperX ready at $VENV/bin/whisperx"
 echo
 echo "Point the CLI at it:"
-echo "  transcribe-cli setup            # and choose the local engine"
+echo "  transcribe-cli -c               # and choose the local engine"
 echo "or set it directly:"
 echo "  TRANSCRIBE_PYTHON_PATH=$VENV/bin/python"
 echo

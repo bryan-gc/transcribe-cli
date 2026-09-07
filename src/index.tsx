@@ -18,7 +18,8 @@ import {
 } from './config/resolveOptions.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsSetup } from './transcriber/createTranscriber.js';
-import { activeCapabilities, formatReport, runChecks } from './system/doctor.js';
+import { activeCapabilities, engineBlockers, formatReport, runChecks } from './system/doctor.js';
+import { engineLabel } from './components/statusFields.js';
 import { formatUsageReport, readUsage } from './utils/usageLog.js';
 import { AVAILABLE_LANGUAGES } from './constants.js';
 
@@ -26,6 +27,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkgPath = path.join(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+const KNOWN_COMMANDS = ['doctor', 'usage'];
 
 const program = new Command();
 
@@ -52,14 +55,23 @@ program
 
 const config = ConfigManager.load();
 
-if (program.args[0] === 'doctor') {
+const command = program.args[0];
+if (command !== undefined && !KNOWN_COMMANDS.includes(command)) {
+  process.stderr.write(
+    `Unknown command '${command}'. Available: ${KNOWN_COMMANDS.join(', ')}.\n` +
+      'Run transcribe-cli --help to see every flag, or transcribe-cli -c for the settings menu.\n',
+  );
+  process.exit(1);
+}
+
+if (command === 'doctor') {
   const showAll = program.opts().all === true;
   const active = activeCapabilities(config, program.opts().file);
   const { text, failedInUse } = formatReport(runChecks(config, active), showAll);
   process.stdout.write(`transcribe-cli doctor\n${text}\n`);
   process.exit(failedInUse > 0 ? 1 : 0);
 }
-if (program.args[0] === 'usage') {
+if (command === 'usage') {
   const report = formatUsageReport(readUsage(config.basePath), program.opts().all === true);
   process.stdout.write(`${report}\n`);
   process.exit(0);
@@ -80,6 +92,20 @@ try {
 const setupRequired = needsSetup({ ...config, engine: options.engine });
 
 if (!setupRequired) {
+  const blockers = options.manual ? [] : engineBlockers({ ...config, engine: options.engine });
+  if (blockers.length > 0) {
+    const detail = blockers
+      .map((check) => {
+        const remedy = check.remedy ? `\n    ${check.remedy}` : '';
+        return `  ✘ ${check.name}: ${check.detail}${remedy}`;
+      })
+      .join('\n');
+    process.stderr.write(
+      `Nothing was recorded: the ${engineLabel(options.engine)} engine is not ready.\n${detail}\n` +
+        'Pick another engine with --engine, open transcribe-cli -c, or run transcribe-cli doctor.\n',
+    );
+    process.exit(1);
+  }
   ConfigManager.initializeBasePath(config.basePath);
 }
 

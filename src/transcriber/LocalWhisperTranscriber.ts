@@ -24,7 +24,7 @@ export class LocalWhisperTranscriber implements ITranscriber {
     }
     if (!fs.existsSync(this.config.binPath)) {
       throw new LocalWhisperError(
-        `WhisperX not found at ${this.config.binPath}. Install it with scripts/install-whisperx.sh, or set the path with transcribe-cli setup.`,
+        `WhisperX not found at ${this.config.binPath}. Install it with scripts/install-whisperx.sh, or set the path with transcribe-cli -c.`,
       );
     }
 

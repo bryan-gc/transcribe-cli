@@ -131,7 +131,7 @@ export function describeTranscriptionError(error: unknown): string {
   const code = (error as { code?: string })?.code;
   const message = error instanceof Error ? error.message : String(error);
 
-  if (status === 401) return 'Invalid API key — run transcribe-cli setup to update it.';
+  if (status === 401) return 'Invalid API key — run transcribe-cli -c to update it.';
   if (status === 429 || /quota|insufficient_quota/i.test(message)) {
     return 'OpenAI quota exceeded — check your plan and billing.';
   }

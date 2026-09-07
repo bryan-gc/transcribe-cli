@@ -24,7 +24,7 @@ export function createTranscriber(
   if (config.engine === Engine.LOCAL) return new LocalWhisperTranscriber(config.localWhisper);
 
   if (!config.apiKey) {
-    throw new Error('No API key configured. Run transcribe-cli setup, or use --local.');
+    throw new Error('No API key configured. Run transcribe-cli -c, or use --local.');
   }
   return new WhisperTranscriber(config.apiKey);
 }
