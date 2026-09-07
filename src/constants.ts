@@ -46,6 +46,7 @@ export const EXT = {
   SUBTITLES: '.srt',
   TEXT: '.txt',
   GLOSSARY: '.txt',
+  DIARIZED: '.json',
 } as const;
 
 export function getPaths(basePath: string) {
@@ -184,9 +185,22 @@ export const AVAILABLE_LANGUAGES = Object.values(LanguageCode);
 export enum TranscriptionFormat {
   TEXT = 'text',
   SRT = 'srt',
+  DIARIZED = 'diarized_json',
 }
 
 export const WHISPER_MODEL = 'whisper-1' as const;
+
+/** Speaker labelling needs a different model; whisper-1 has no notion of who is talking. */
+export const DIARIZE_MODEL = 'gpt-4o-transcribe-diarize' as const;
+
+/** Required by the diarizing model for anything longer than 30 seconds. */
+export const DIARIZE_CHUNKING = 'auto' as const;
+
+/** Below this a subtitle flashes past unread, so short segments are merged up to it. */
+export const MIN_SUBTITLE_SEC = 1.2;
+
+/** Two lines of roughly 42 characters, the usual ceiling for a readable subtitle. */
+export const SUBTITLE_MAX_CHARS = 84;
 
 /** Attempts the SDK makes on its own for connection errors, 429 and 5xx before giving up. */
 export const SDK_MAX_RETRIES = 3 as const;

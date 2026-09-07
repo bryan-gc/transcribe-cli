@@ -19,6 +19,7 @@ export interface ImportedAudio {
   audioPath: string;
   srtPath: string;
   textPath: string;
+  diarizedPath: string;
   /** True when ffmpeg had to re-encode, which is worth saying while the user waits. */
   converted: boolean;
 }

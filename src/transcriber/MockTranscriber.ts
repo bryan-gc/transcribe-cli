@@ -1,12 +1,5 @@
-import type { ITranscriber } from './ITranscriber.js';
-import type { LanguageCode, TranscriptionFormat } from '../constants.js';
-
-export interface RecordedCall {
-  audioFilePath: string;
-  language: LanguageCode;
-  format: TranscriptionFormat;
-  prompt?: string;
-}
+import type { ITranscriber, TranscribeOptions, TranscriptionResult } from './ITranscriber.js';
+import { parseDiarized } from '../utils/diarizedParser.js';
 
 /**
  * Transcriber that returns canned results instead of reaching a real engine.
@@ -16,7 +9,7 @@ export interface RecordedCall {
  * once and succeeds on retry.
  */
 export class MockTranscriber implements ITranscriber {
-  readonly calls: RecordedCall[] = [];
+  readonly calls: TranscribeOptions[] = [];
   private readonly outcomes: (string | Error)[];
   private index = 0;
 
@@ -27,19 +20,16 @@ export class MockTranscriber implements ITranscriber {
     }
   }
 
-  async transcribe(
-    audioFilePath: string,
-    language: LanguageCode,
-    format: TranscriptionFormat,
-    prompt?: string,
-    onProgress?: (status: string) => void,
-  ): Promise<string> {
-    this.calls.push({ audioFilePath, language, format, prompt });
-    onProgress?.('mock: returning canned result');
+  async transcribe(options: TranscribeOptions): Promise<TranscriptionResult> {
+    this.calls.push(options);
+    options.onProgress?.('mock: returning canned result');
 
     const outcome = this.outcomes[Math.min(this.index, this.outcomes.length - 1)]!;
     this.index += 1;
     if (outcome instanceof Error) throw outcome;
-    return outcome;
+
+    // A diarized fixture is JSON, so it is parsed the same way a real response would be and the
+    // caller sees the shape it will see in production.
+    return options.diarize ? { raw: outcome, segments: parseDiarized(outcome) } : { raw: outcome };
   }
 }

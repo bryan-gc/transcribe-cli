@@ -11,6 +11,7 @@ export function useImportTranscribe(
   appConfig: AppConfig,
   filePath: string,
   glossary: string,
+  diarize: boolean,
   exit: () => void,
 ) {
   const [statusText, setStatusText] = useState('Preparing the file...');
@@ -28,7 +29,7 @@ export function useImportTranscribe(
     setIsTranscribing(true);
     setFailure(null);
     setStatusText(
-      `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''})...`,
+      `⏳ Transcribing (${LANGUAGE_NAMES[language]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
     );
 
     try {
@@ -38,6 +39,8 @@ export function useImportTranscribe(
         textPath: imported.textPath,
         language,
         glossary: glossaryPrompt,
+        diarize,
+        diarizedPath: imported.diarizedPath,
         copyToClipboard: appConfig.autoCopy,
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),
       });

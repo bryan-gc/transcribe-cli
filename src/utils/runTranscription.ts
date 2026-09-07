@@ -1,6 +1,7 @@
 import fs from 'fs';
 import type { ITranscriber } from '../transcriber/ITranscriber.js';
 import { extractTextFromSrt } from './srtParser.js';
+import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
 import type { LanguageCode } from '../constants.js';
 import { Encoding, TranscriptionFormat } from '../constants.js';
@@ -11,6 +12,10 @@ export interface TranscriptionJob {
   textPath: string;
   language: LanguageCode;
   glossary?: string;
+  /** Ask the engine for speaker labels. */
+  diarize?: boolean;
+  /** Where to keep the raw diarized response; only written when speakers were labelled. */
+  diarizedPath?: string;
   copyToClipboard: boolean;
   onProgress?: (status: string) => void;
 }
@@ -30,18 +35,31 @@ export async function runTranscription(
     throw new Error(`Audio file not found: ${job.audioPath}`);
   }
 
-  const srtContent = await transcriber.transcribe(
-    job.audioPath,
-    job.language,
-    TranscriptionFormat.SRT,
-    job.glossary,
-    job.onProgress,
-  );
+  const result = await transcriber.transcribe({
+    audioFilePath: job.audioPath,
+    language: job.language,
+    format: TranscriptionFormat.SRT,
+    prompt: job.glossary,
+    diarize: job.diarize,
+    onProgress: job.onProgress,
+  });
 
   job.onProgress?.('Saving files...');
-  const cleanText = extractTextFromSrt(srtContent);
+
+  // With speakers the engine returns segments rather than subtitles, so both outputs are built
+  // here: the timings are all that was missing, and the rest of the pipeline stays the same.
+  const srtContent = result.segments ? buildSrtFromDiarized(result.segments) : result.raw;
+  const cleanText = result.segments
+    ? formatDiarized(result.segments)
+    : extractTextFromSrt(result.raw);
+
   fs.writeFileSync(job.srtPath, srtContent, Encoding.UTF8);
   fs.writeFileSync(job.textPath, cleanText, Encoding.UTF8);
+  // The raw response is kept only for a diarized run: it is the one that carries information the
+  // subtitles drop, such as which speaker said what at what exact offset.
+  if (result.segments && job.diarizedPath) {
+    fs.writeFileSync(job.diarizedPath, result.raw, Encoding.UTF8);
+  }
 
   if (job.copyToClipboard) copyTextToClipboard(cleanText);
   return cleanText;
