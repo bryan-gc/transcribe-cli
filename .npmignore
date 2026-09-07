@@ -6,3 +6,5 @@ glossaries/
 *.env
 .vscode/
 DEVELOPMENT.md
+CLAUDE.md
+docs/

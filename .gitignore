@@ -3,3 +3,10 @@ node_modules/
 dist/
 tmp/
 glossaries/
+CLAUDE.md
+docs/
+
+# Audio y transcripciones reales: el repo es público, nunca se commitean
+tests/fixtures/*.wav
+tests/fixtures/*.mp3
+tests/fixtures/*.m4a
