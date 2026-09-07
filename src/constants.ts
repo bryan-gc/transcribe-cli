@@ -169,6 +169,15 @@ export enum TranscriptionFormat {
 
 export const WHISPER_MODEL = 'whisper-1' as const;
 
+/** Attempts the SDK makes on its own for connection errors, 429 and 5xx before giving up. */
+export const SDK_MAX_RETRIES = 3 as const;
+
+/**
+ * Ten minutes is the SDK default and is not enough: uploading and processing a long recording can
+ * take longer than that, and timing out there wastes the whole upload.
+ */
+export const REQUEST_TIMEOUT_MS = 20 * 60 * 1000;
+
 // ─── UI Constants ─────────────────────────────────────────────────────────────
 
 export enum ViewMode {
