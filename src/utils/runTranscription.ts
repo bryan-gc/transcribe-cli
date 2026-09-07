@@ -1,10 +1,13 @@
 import fs from 'fs';
+import path from 'path';
 import type { ITranscriber, TranscriptionUsage } from '../transcriber/ITranscriber.js';
+import { audioDurationSeconds } from '../audio/audioDuration.js';
+import { buildMeta, type TranscriptionMeta } from './transcriptionMeta.js';
 import { extractTextFromSrt } from './srtParser.js';
 import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
 import type { LanguageCode } from '../constants.js';
-import { Encoding, TranscriptionFormat } from '../constants.js';
+import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
 
 export interface TranscriptionJob {
   audioPath: string;
@@ -14,6 +17,8 @@ export interface TranscriptionJob {
   glossary?: string;
   diarize?: boolean;
   diarizedPath?: string;
+  metaPath?: string;
+  source?: RecordingKind;
   copyToClipboard: boolean;
   onProgress?: (status: string) => void;
 }
@@ -32,6 +37,7 @@ export interface TranscriptionOutcome {
   model: string;
   tookMs: number;
   usage?: TranscriptionUsage;
+  meta: TranscriptionMeta;
 }
 
 export async function runTranscription(
@@ -65,12 +71,26 @@ export async function runTranscription(
     fs.writeFileSync(job.diarizedPath, result.raw, Encoding.UTF8);
   }
 
+  const meta = buildMeta({
+    source: job.source ?? RecordingKind.RECORDED,
+    audioFile: path.basename(job.audioPath),
+    audioSeconds: audioDurationSeconds(job.audioPath),
+    engine: result.engine,
+    model: result.model,
+    language: job.language,
+    diarized: result.segments !== undefined,
+    tookMs: Date.now() - startedAt,
+    usage: result.usage,
+  });
+  if (job.metaPath) fs.writeFileSync(job.metaPath, JSON.stringify(meta, null, 2), Encoding.UTF8);
+
   const base = {
     text: cleanText,
     engine: result.engine,
     model: result.model,
-    tookMs: Date.now() - startedAt,
+    tookMs: meta.tookMs,
     usage: result.usage,
+    meta,
   };
 
   if (!job.copyToClipboard) return { ...base, clipboard: ClipboardOutcome.OFF };

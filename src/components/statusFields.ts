@@ -6,6 +6,7 @@ import {
   formatDuration,
   type TranscriptionOutcome,
 } from '../utils/runTranscription.js';
+import { formatCost } from '../utils/transcriptionMeta.js';
 
 export function languageField(language: LanguageCode): StatusField {
   return { label: 'Language', value: LANGUAGE_NAMES[language] };
@@ -25,6 +26,18 @@ export function engineField(engine: Engine, run: TranscriptionOutcome | null): S
 
 export function tookField(run: TranscriptionOutcome | null): StatusField[] {
   return run ? [{ label: 'Took', value: formatDuration(run.tookMs), tone: 'dim' }] : [];
+}
+
+export function costField(run: TranscriptionOutcome | null): StatusField[] {
+  if (!run || run.meta.cost.usd === 0) return [];
+  return [{ label: 'Cost', value: formatCost(run.meta.cost), tone: 'dim' }];
+}
+
+export function audioLengthField(run: TranscriptionOutcome | null): StatusField[] {
+  const seconds = run?.meta.audio.seconds;
+  return seconds === undefined
+    ? []
+    : [{ label: 'Audio', value: formatDuration(seconds * 1000), tone: 'dim' }];
 }
 
 export function clipboardField(enabled: boolean, run: TranscriptionOutcome | null): StatusField {

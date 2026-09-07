@@ -15,6 +15,7 @@ import {
   LanguageCode,
   LANGUAGE_NAMES,
   AVAILABLE_LANGUAGES,
+  RecordingKind,
   ViewMode,
   MenuAction,
 } from '../constants.js';
@@ -34,6 +35,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
   const [currentTextPath, setCurrentTextPath] = useState('');
+  const [currentMetaPath, setCurrentMetaPath] = useState('');
 
   const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(
     AVAILABLE_LANGUAGES.includes(appConfig.selectedLanguage)
@@ -77,6 +79,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
         case MenuAction.RECORD:
           if (!isRecording) {
             const p = getTimestampPaths(appConfig.basePath);
+            setCurrentMetaPath(p.metaPath);
             setCurrentAudioPath(p.audioPath);
             setCurrentSrtPath(p.srtPath);
             setCurrentTextPath(p.textPath);
@@ -168,6 +171,8 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               textPath: currentTextPath,
               language: activeLanguage,
               glossary: glossaryPrompt,
+              metaPath: currentMetaPath,
+              source: RecordingKind.RECORDED,
               copyToClipboard: clipboardEnabled,
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
             });
@@ -194,6 +199,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       currentAudioPath,
       currentSrtPath,
       currentTextPath,
+      currentMetaPath,
       activeLanguage,
       activeGlossary,
       activeMic,

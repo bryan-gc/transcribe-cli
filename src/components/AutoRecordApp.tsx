@@ -11,6 +11,8 @@ import {
   glossaryField,
   languageField,
   tookField,
+  costField,
+  audioLengthField,
 } from './statusFields.js';
 
 export function AutoRecordApp({
@@ -71,7 +73,9 @@ export function AutoRecordApp({
           glossaryField(glossaryLabel),
           { label: 'Microphone', value: activeMic.label },
           engineField(appConfig.engine, lastRun),
+          ...audioLengthField(lastRun),
           ...tookField(lastRun),
+          ...costField(lastRun),
           clipboardField(appConfig.autoCopy, lastRun),
         ]}
       />

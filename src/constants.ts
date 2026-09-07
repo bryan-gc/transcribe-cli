@@ -34,6 +34,7 @@ export const EXT = {
   TEXT: '.txt',
   GLOSSARY: '.txt',
   DIARIZED: '.json',
+  META: '.meta.json',
 } as const;
 
 export function getPaths(basePath: string) {
@@ -75,6 +76,7 @@ export enum Cmd {
   PW_DUMP = 'pw-dump',
   SYSTEM_PROFILER = 'system_profiler',
   FFMPEG = 'ffmpeg',
+  FFPROBE = 'ffprobe',
   XCLIP = 'xclip',
   XSEL = 'xsel',
 }
@@ -183,6 +185,13 @@ export const WHISPER_MODEL = 'whisper-1' as const;
 export const DIARIZE_MODEL = 'gpt-4o-transcribe-diarize' as const;
 
 export const DIARIZE_CHUNKING = 'auto' as const;
+
+export const PRICING_CHECKED_ON = '2026-09-07' as const;
+
+export const PRICING = {
+  [WHISPER_MODEL]: { perAudioMinuteUsd: 0.006 },
+  [DIARIZE_MODEL]: { perInputTokenUsd: 2.5 / 1_000_000, perOutputTokenUsd: 10 / 1_000_000 },
+} as const;
 
 export const MIN_SUBTITLE_SEC = 1.2;
 

@@ -24,6 +24,7 @@ export function getTimestampPaths(
     srtPath: path.join(dir, `${stem}${EXT.SUBTITLES}`),
     textPath: path.join(dir, `${stem}${EXT.TEXT}`),
     diarizedPath: path.join(dir, `${stem}${EXT.DIARIZED}`),
+    metaPath: path.join(dir, `${stem}${EXT.META}`),
   };
 }
 

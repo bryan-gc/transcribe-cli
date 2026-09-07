@@ -10,7 +10,7 @@ import {
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
 import { readGlossaryContent } from '../utils/fileUtils.js';
 import type { AppConfig } from '../config/configManager.js';
-import { LANGUAGE_NAMES } from '../constants.js';
+import { LANGUAGE_NAMES, RecordingKind } from '../constants.js';
 
 export function useImportTranscribe(
   appConfig: AppConfig,
@@ -49,6 +49,8 @@ export function useImportTranscribe(
           glossary: glossaryPrompt,
           diarize,
           diarizedPath: imported.diarizedPath,
+          metaPath: imported.metaPath,
+          source: RecordingKind.IMPORTED,
           copyToClipboard: appConfig.autoCopy,
           onProgress: (msg) => setStatusText(`⏳ ${msg}`),
         });

@@ -11,6 +11,8 @@ import {
   glossaryField,
   languageField,
   tookField,
+  costField,
+  audioLengthField,
 } from './statusFields.js';
 
 export function ImportApp({
@@ -65,7 +67,9 @@ export function ImportApp({
           glossaryField(glossaryLabel),
           { label: 'Audio file', value: sourceName },
           engineField(appConfig.engine, lastRun),
+          ...audioLengthField(lastRun),
           ...tookField(lastRun),
+          ...costField(lastRun),
           clipboardField(appConfig.autoCopy, lastRun),
         ]}
       />

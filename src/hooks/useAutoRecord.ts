@@ -11,7 +11,7 @@ import {
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
-import { LANGUAGE_NAMES } from '../constants.js';
+import { LANGUAGE_NAMES, RecordingKind } from '../constants.js';
 
 export function useAutoRecord(
   appConfig: AppConfig,
@@ -30,6 +30,7 @@ export function useAutoRecord(
   const [currentSrtPath, setCurrentSrtPath] = useState('');
   const [currentTextPath, setCurrentTextPath] = useState('');
   const [currentDiarizedPath, setCurrentDiarizedPath] = useState('');
+  const [currentMetaPath, setCurrentMetaPath] = useState('');
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const transcriberRef = useRef<ITranscriber | null>(null);
@@ -57,6 +58,7 @@ export function useAutoRecord(
     setCurrentSrtPath(p.srtPath);
     setCurrentTextPath(p.textPath);
     setCurrentDiarizedPath(p.diarizedPath);
+    setCurrentMetaPath(p.metaPath);
 
     recorder.start(p.audioPath);
     setIsRecording(true);
@@ -92,6 +94,8 @@ export function useAutoRecord(
         glossary: glossaryPrompt,
         diarize,
         diarizedPath: currentDiarizedPath,
+        metaPath: currentMetaPath,
+        source: RecordingKind.RECORDED,
         copyToClipboard: appConfig.autoCopy,
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),
       });

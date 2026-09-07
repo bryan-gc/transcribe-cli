@@ -20,6 +20,7 @@ export interface ImportedAudio {
   srtPath: string;
   textPath: string;
   diarizedPath: string;
+  metaPath: string;
   converted: boolean;
 }
 
