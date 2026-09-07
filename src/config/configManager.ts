@@ -38,9 +38,15 @@ export class ConfigManager {
 
   static save(config: AppConfig): void {
     if (!fs.existsSync(CONFIG_DIR)) {
-      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+      fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
     }
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), {
+      encoding: 'utf-8',
+      mode: 0o600,
+    });
+    // The file holds an API key, and `mode` above only applies when the file is created.
+    // Existing configs written before this keep their old permissions without an explicit chmod.
+    fs.chmodSync(CONFIG_PATH, 0o600);
   }
 
   static validateBasePath(basePath: string): boolean {
