@@ -1,6 +1,7 @@
 import type { StatusField } from './Header.js';
 import { Engine, type AppConfig } from '../config/configManager.js';
 import { engineBlockers } from '../system/doctor.js';
+import { type ResolveSources } from '../system/dependencies.js';
 import { LANGUAGE_NAMES, type LanguageCode } from '../constants.js';
 import {
   ClipboardOutcome,
@@ -24,8 +25,9 @@ export function engineLabel(engine: Engine): string {
 export function engineOption(
   config: AppConfig,
   engine: Engine,
+  sources: ResolveSources = {},
 ): { label: string; ready: boolean; blocker: string } {
-  const missing = engineBlockers({ ...config, engine })[0];
+  const missing = engineBlockers({ ...config, engine }, sources)[0];
   if (!missing) return { label: engineLabel(engine), ready: true, blocker: '' };
   return {
     label: `${engineLabel(engine)}  —  not ready (${missing.name})`,
