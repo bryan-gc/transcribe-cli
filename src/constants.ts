@@ -1,10 +1,26 @@
 import path from 'path';
 
-/** Names of directories used by the application at the project root. */
+/** Names of directories used by the application under the configured base path. */
 export const DIR = {
-  TMP: 'tmp',
+  DATA: 'transcriptions',
   GLOSSARIES: 'glossaries',
+  CACHE: '.cache',
 } as const;
+
+/**
+ * Where a recording came from. Live recordings and files handed to the tool end up in separate
+ * subdirectories so the archive stays legible once both exist.
+ */
+export enum RecordingKind {
+  RECORDED = 'recorded',
+  IMPORTED = 'imported',
+}
+
+/**
+ * What DIR.DATA used to be called. Kept only so an installation created before the rename can be
+ * migrated once; nothing writes here.
+ */
+export const LEGACY_DATA_DIR = 'tmp' as const;
 
 /** File extensions the app reads or writes. */
 export const EXT = {
@@ -17,7 +33,8 @@ export const EXT = {
 export function getPaths(basePath: string) {
   return {
     GLOSSARIES_DIR: path.resolve(basePath, DIR.GLOSSARIES),
-    TEST_FILE: path.resolve(basePath, DIR.TMP, `mic-test${EXT.AUDIO}`),
+    // The microphone test is the one genuinely disposable file, so it lives apart from the archive.
+    TEST_FILE: path.resolve(basePath, DIR.CACHE, `mic-test${EXT.AUDIO}`),
   };
 }
 
