@@ -1,7 +1,13 @@
 import fs from 'fs';
 import OpenAI from 'openai';
 import type { ITranscriber } from './ITranscriber.js';
-import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants.js';
+import {
+  LanguageCode,
+  REQUEST_TIMEOUT_MS,
+  SDK_MAX_RETRIES,
+  TranscriptionFormat,
+  WHISPER_MODEL,
+} from '../constants.js';
 
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
@@ -9,6 +15,8 @@ export class WhisperTranscriber implements ITranscriber {
   constructor(apiKey: string, fetchImpl?: typeof fetch) {
     this.openai = new OpenAI({
       apiKey,
+      maxRetries: SDK_MAX_RETRIES,
+      timeout: REQUEST_TIMEOUT_MS,
       ...(fetchImpl ? { fetch: fetchImpl } : {}),
     });
   }

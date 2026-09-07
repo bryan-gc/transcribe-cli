@@ -4,7 +4,7 @@ import path from 'path';
 import { Header } from './Header.js';
 import { useAutoRecord } from '../hooks/useAutoRecord.js';
 import type { AppConfig } from '../config/configManager.js';
-import { EXT, HOTKEY_EXIT } from '../constants.js';
+import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
 
 export function AutoRecordApp({ appConfig }: { appConfig: AppConfig }) {
   const { exit } = useApp();
@@ -15,25 +15,31 @@ export function AutoRecordApp({ appConfig }: { appConfig: AppConfig }) {
     isRecording,
     isTranscribing,
     transcriptionResult,
+    failure,
+    currentAudioPath,
     activeLanguage,
     activeMic,
     activeGlossary,
     currentTextPath,
   } = state;
 
-  const { handleStopAndTranscribe, forceStop } = actions;
+  const { handleStopAndTranscribe, retry, forceStop } = actions;
 
   useInput(
     (input, key) => {
-      if (key.return) {
-        handleStopAndTranscribe();
-      }
       if (key.ctrl && input === HOTKEY_EXIT) {
         forceStop();
         exit();
+        return;
       }
+      if (failure) {
+        if (input.toLowerCase() === ActionHotkey.RECORD) retry();
+        if (input.toLowerCase() === ActionHotkey.CANCEL_Q) exit();
+        return;
+      }
+      if (key.return) handleStopAndTranscribe();
     },
-    { isActive: isRecording && !isTranscribing },
+    { isActive: (isRecording || failure !== null) && !isTranscribing },
   );
 
   const glossaryLabel = activeGlossary ? path.basename(activeGlossary, EXT.GLOSSARY) : '(none)';
@@ -49,6 +55,16 @@ export function AutoRecordApp({ appConfig }: { appConfig: AppConfig }) {
         micLabel={activeMic.label}
         clipboardEnabled={appConfig.autoCopy}
       />
+
+      {failure !== null && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text color="red">{failure}</Text>
+          <Text dimColor>Audio saved at {currentAudioPath}</Text>
+          <Text>
+            Press [{ActionHotkey.RECORD}] to retry · [{ActionHotkey.CANCEL_Q}] to quit
+          </Text>
+        </Box>
+      )}
 
       {transcriptionResult !== '' && (
         <Box flexDirection="column" marginTop={1}>

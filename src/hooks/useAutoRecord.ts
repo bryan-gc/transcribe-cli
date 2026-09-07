@@ -2,18 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
-import { extractTextFromSrt } from '../utils/srtParser.js';
-import { copyTextToClipboard } from '../utils/clipboard.js';
+import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { listMicDevices } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
-import { Encoding, LANGUAGE_NAMES, TranscriptionFormat } from '../constants.js';
+import { LANGUAGE_NAMES } from '../constants.js';
 
 export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
   const [statusText, setStatusText] = useState('Initializing recording...');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
@@ -60,59 +60,62 @@ export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
     };
   }, [appConfig, activeMic.id]);
 
+  const transcribe = async () => {
+    if (!transcriberRef.current) return;
+
+    const glossaryPrompt = readGlossaryContent(appConfig.basePath, activeGlossary);
+    setIsTranscribing(true);
+    setFailure(null);
+    setStatusText(
+      `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''})...`,
+    );
+
+    try {
+      const cleanText = await runTranscription(transcriberRef.current, {
+        audioPath: currentAudioPath,
+        srtPath: currentSrtPath,
+        textPath: currentTextPath,
+        language: activeLanguage,
+        glossary: glossaryPrompt,
+        copyToClipboard: appConfig.autoCopy,
+        onProgress: (msg) => setStatusText(`⏳ ${msg}`),
+      });
+
+      setTranscriptionResult(cleanText);
+      setStatusText(
+        appConfig.autoCopy
+          ? '✅ Transcription done — copied to clipboard.'
+          : '✅ Transcription completed and saved.',
+      );
+      setTimeout(exit, 500);
+    } catch (err: unknown) {
+      setFailure(describeTranscriptionError(err));
+      setStatusText('❌ Transcription failed.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const handleStopAndTranscribe = async () => {
     if (!recorderRef.current || !transcriberRef.current || !isRecording || isTranscribing) {
       return;
     }
 
-    try {
-      setIsRecording(false);
-      setIsTranscribing(true);
-      setStatusText('⏹️  Stopped recording. Saving file...');
+    setIsRecording(false);
+    setIsTranscribing(true);
+    setStatusText('⏹️  Stopped recording. Saving file...');
 
-      await recorderRef.current.stop();
-      recorderRef.current = null;
+    await recorderRef.current.stop();
+    recorderRef.current = null;
 
-      if (!fs.existsSync(currentAudioPath)) {
-        setStatusText('❌ Error: Audio file was not generated.');
-        setTimeout(exit, 2000);
-        return;
-      }
-
-      const glossaryPrompt = readGlossaryContent(appConfig.basePath, activeGlossary);
-
-      setStatusText(
-        `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''})...`,
-      );
-
-      const srtContent = await transcriberRef.current.transcribe(
-        currentAudioPath,
-        activeLanguage,
-        TranscriptionFormat.SRT,
-        glossaryPrompt,
-        (msg) => setStatusText(`⏳ Transcribing: ${msg}`),
-      );
-
-      setStatusText('⏳ Formatting text and saving files...');
-      fs.writeFileSync(currentSrtPath, srtContent, Encoding.UTF8);
-      const cleanText = extractTextFromSrt(srtContent);
-      fs.writeFileSync(currentTextPath, cleanText, Encoding.UTF8);
-
-      setTranscriptionResult(cleanText);
-
-      if (appConfig.autoCopy) {
-        copyTextToClipboard(cleanText);
-        setStatusText('✅ Transcription done — copied to clipboard.');
-      } else {
-        setStatusText('✅ Transcription completed and saved.');
-      }
-
-      setTimeout(exit, 500);
-    } catch (err: unknown) {
-      setStatusText(`❌ Error: ${err instanceof Error ? err.message : String(err)}`);
+    if (!fs.existsSync(currentAudioPath)) {
       setIsTranscribing(false);
-      setTimeout(exit, 3000);
+      setFailure('The recording produced no audio file. Check the microphone with --manual.');
+      setStatusText('❌ Nothing was recorded.');
+      return;
     }
+
+    await transcribe();
   };
 
   const forceStop = () => {
@@ -125,6 +128,8 @@ export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
       isRecording,
       isTranscribing,
       transcriptionResult,
+      failure,
+      currentAudioPath,
       activeLanguage,
       activeMic,
       activeGlossary,
@@ -132,6 +137,7 @@ export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
     },
     actions: {
       handleStopAndTranscribe,
+      retry: transcribe,
       forceStop,
     },
   };

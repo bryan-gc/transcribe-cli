@@ -159,6 +159,10 @@ export enum TranscriptionFormat {
 
 export const WHISPER_MODEL = 'whisper-1' as const;
 
+export const SDK_MAX_RETRIES = 3 as const;
+
+export const REQUEST_TIMEOUT_MS = 20 * 60 * 1000;
+
 // ─── UI Constants ─────────────────────────────────────────────────────────────
 
 export enum ViewMode {

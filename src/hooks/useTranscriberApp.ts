@@ -3,18 +3,15 @@ import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { listMicDevices, type MicDevice } from '../audio/micDevices.js';
 import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
-import { extractTextFromSrt } from '../utils/srtParser.js';
-import { copyTextToClipboard } from '../utils/clipboard.js';
+import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
 import {
   DEFAULT_DEVICE_ID,
   DEFAULT_DEVICE_LABEL,
-  Encoding,
   LanguageCode,
   LANGUAGE_NAMES,
   AVAILABLE_LANGUAGES,
-  TranscriptionFormat,
   ViewMode,
   MenuAction,
 } from '../constants.js';
@@ -158,28 +155,24 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
             `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}) - Initializing...`,
           );
           try {
-            const srtContent = await transcriber.current.transcribe(
-              currentAudioPath,
-              activeLanguage,
-              TranscriptionFormat.SRT,
-              glossaryPrompt,
-              (msg) => setStatusText(`⏳ Transcribing: ${msg}`),
-            );
+            const cleanText = await runTranscription(transcriber.current, {
+              audioPath: currentAudioPath,
+              srtPath: currentSrtPath,
+              textPath: currentTextPath,
+              language: activeLanguage,
+              glossary: glossaryPrompt,
+              copyToClipboard: clipboardEnabled,
+              onProgress: (msg) => setStatusText(`⏳ ${msg}`),
+            });
 
-            setStatusText('⏳ Formatting text and saving files...');
-            fs.writeFileSync(currentSrtPath, srtContent, Encoding.UTF8);
-            const cleanText = extractTextFromSrt(srtContent);
-            fs.writeFileSync(currentTextPath, cleanText, Encoding.UTF8);
             setTranscriptionResult(cleanText);
-
-            if (clipboardEnabled) {
-              copyTextToClipboard(cleanText);
-              setStatusText('✅ Transcription done — copied to clipboard.');
-              return;
-            }
-            setStatusText('✅ Transcription completed and saved.');
+            setStatusText(
+              clipboardEnabled
+                ? '✅ Transcription done — copied to clipboard.'
+                : '✅ Transcription completed and saved.',
+            );
           } catch (err: unknown) {
-            setStatusText(`❌ Error: ${err instanceof Error ? err.message : String(err)}`);
+            setStatusText(`❌ ${describeTranscriptionError(err)} Press [t] to retry.`);
           } finally {
             setIsTranscribing(false);
           }
