@@ -11,3 +11,6 @@ docs/
 tests/fixtures/*.wav
 tests/fixtures/*.mp3
 tests/fixtures/*.m4a
+
+# sandbox de pruebas locales
+.sandbox/

@@ -12,7 +12,13 @@ import {
   resolveBinary,
 } from '../src/system/dependencies.js';
 import { activeCapabilities, formatReport, runChecks } from '../src/system/doctor.js';
-import { DEFAULT_CONFIG, Engine, type AppConfig } from '../src/config/configManager.js';
+import {
+  ConfigManager,
+  DEFAULT_CONFIG,
+  ENV_OVERRIDES,
+  Engine,
+  type AppConfig,
+} from '../src/config/configManager.js';
 
 const config = (over: Partial<AppConfig> = {}): AppConfig => ({
   ...DEFAULT_CONFIG,
@@ -142,4 +148,34 @@ test('the report names the command that installs what is missing', () => {
     platform: 'linux',
   });
   assert.match(formatReport(groups, true).text, /sudo apt install alsa-utils/);
+});
+
+test('the environment overrides the stored API key', () => {
+  const stored = ConfigManager.load({});
+  const overridden = ConfigManager.load({ [ENV_OVERRIDES.API_KEY]: 'sk-from-env' });
+
+  assert.equal(overridden.apiKey, 'sk-from-env');
+  assert.notEqual(stored.apiKey, 'sk-from-env');
+});
+
+test('the environment overrides the base path, which is what protects a real archive', () => {
+  const overridden = ConfigManager.load({ [ENV_OVERRIDES.BASE_PATH]: '/tmp/sandbox' });
+  assert.equal(overridden.basePath, '/tmp/sandbox');
+});
+
+test('the environment overrides where whisperx lives', () => {
+  const overridden = ConfigManager.load({ [ENV_OVERRIDES.WHISPERX_PATH]: '/opt/whisperx' });
+  assert.equal(overridden.localWhisper.binPath, '/opt/whisperx');
+  assert.equal(overridden.localWhisper.model, DEFAULT_CONFIG.localWhisper.model);
+});
+
+test('an empty variable is not an override, since a shell exports unset ones as empty', () => {
+  const plain = ConfigManager.load({});
+  const withEmpty = ConfigManager.load({
+    [ENV_OVERRIDES.API_KEY]: '',
+    [ENV_OVERRIDES.BASE_PATH]: '   ',
+  });
+
+  assert.equal(withEmpty.apiKey, plain.apiKey);
+  assert.equal(withEmpty.basePath, plain.basePath);
 });

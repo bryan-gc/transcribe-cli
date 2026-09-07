@@ -32,6 +32,12 @@ export interface AppConfig {
   binPaths: BinPaths;
 }
 
+export const ENV_OVERRIDES = {
+  API_KEY: 'OPENAI_API_KEY',
+  BASE_PATH: 'TRANSCRIBE_BASE_PATH',
+  WHISPERX_PATH: 'TRANSCRIBE_WHISPERX_PATH',
+} as const;
+
 const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 
@@ -53,13 +59,16 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 export class ConfigManager {
-  static load(): AppConfig {
+  static load(env: NodeJS.ProcessEnv = process.env): AppConfig {
+    return ConfigManager.applyEnvironmentOverrides(ConfigManager.readStored(), env);
+  }
+
+  private static readStored(): AppConfig {
     if (!fs.existsSync(CONFIG_PATH)) {
       return { ...DEFAULT_CONFIG };
     }
     try {
-      const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
       const config = {
         ...DEFAULT_CONFIG,
         ...parsed,
@@ -74,6 +83,23 @@ export class ConfigManager {
     } catch {
       return { ...DEFAULT_CONFIG };
     }
+  }
+
+  private static applyEnvironmentOverrides(config: AppConfig, env: NodeJS.ProcessEnv): AppConfig {
+    const given = (key: string) => {
+      const value = env[key]?.trim();
+      return value === undefined || value === '' ? undefined : value;
+    };
+
+    return {
+      ...config,
+      apiKey: given(ENV_OVERRIDES.API_KEY) ?? config.apiKey,
+      basePath: given(ENV_OVERRIDES.BASE_PATH) ?? config.basePath,
+      localWhisper: {
+        ...config.localWhisper,
+        binPath: given(ENV_OVERRIDES.WHISPERX_PATH) ?? config.localWhisper.binPath,
+      },
+    };
   }
 
   static save(config: AppConfig): void {

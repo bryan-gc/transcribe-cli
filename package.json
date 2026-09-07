@@ -26,7 +26,14 @@
     "format": "prettier --write 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
     "format:check": "prettier --check 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
     "test": "node --import tsx --test tests/**/*.test.ts",
-    "test:watch": "node --import tsx --test --watch tests/**/*.test.ts"
+    "test:watch": "node --import tsx --test --watch tests/**/*.test.ts",
+    "try": "TRANSCRIBE_BASE_PATH=$PWD/.sandbox node --env-file-if-exists=.env --import tsx src/index.tsx",
+    "try:mock": "TRANSCRIBE_MOCK=1 TRANSCRIBE_BASE_PATH=$PWD/.sandbox node --env-file-if-exists=.env --import tsx src/index.tsx",
+    "try:local": "TRANSCRIBE_ENGINE=local TRANSCRIBE_BASE_PATH=$PWD/.sandbox node --env-file-if-exists=.env --import tsx src/index.tsx",
+    "try:doctor": "node --env-file-if-exists=.env --import tsx src/index.tsx doctor --all",
+    "try:global": "npm run build && npm link && transcribe-cli doctor",
+    "sandbox:clean": "rm -rf .sandbox",
+    "verify": "npm run build && npm run lint && npm run format:check && npm test"
   },
   "keywords": [
     "cli",
