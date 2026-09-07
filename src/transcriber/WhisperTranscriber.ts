@@ -6,9 +6,10 @@ import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../constants.j
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, fetchImpl?: typeof fetch) {
     this.openai = new OpenAI({
       apiKey,
+      ...(fetchImpl ? { fetch: fetchImpl } : {}),
     });
   }
 
