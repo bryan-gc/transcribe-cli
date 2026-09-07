@@ -23,24 +23,19 @@ export class WhisperTranscriber implements ITranscriber {
       throw new Error(`Audio file not found: ${audioFilePath}`);
     }
 
-    try {
-      onProgress?.('Preparing audio stream...');
-      const fileStream = fs.createReadStream(audioFilePath);
+    onProgress?.('Preparing audio stream...');
+    const fileStream = fs.createReadStream(audioFilePath);
 
-      onProgress?.('Sending request to OpenAI Whisper API (uploading & processing)...');
-      const response = await this.openai.audio.transcriptions.create({
-        file: fileStream,
-        model: WHISPER_MODEL,
-        language,
-        response_format: format,
-        ...(prompt ? { prompt } : {}),
-      });
+    onProgress?.('Sending request to OpenAI Whisper API (uploading & processing)...');
+    const response = await this.openai.audio.transcriptions.create({
+      file: fileStream,
+      model: WHISPER_MODEL,
+      language,
+      response_format: format,
+      ...(prompt ? { prompt } : {}),
+    });
 
-      onProgress?.('Response received from OpenAI.');
-      return response as unknown as string;
-    } catch (error) {
-      console.error('Whisper transcription error:', error);
-      throw error;
-    }
+    onProgress?.('Response received from OpenAI.');
+    return response as unknown as string;
   }
 }
