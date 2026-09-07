@@ -3,8 +3,14 @@ import assert from 'node:assert/strict';
 import { MockTranscriber } from '../src/transcriber/MockTranscriber.js';
 import { LanguageCode, TranscriptionFormat } from '../src/constants.js';
 
-const call = (t: MockTranscriber) =>
-  t.transcribe('/tmp/audio.wav', LanguageCode.SPANISH, TranscriptionFormat.SRT);
+const call = async (t: MockTranscriber) =>
+  (
+    await t.transcribe({
+      audioFilePath: '/tmp/audio.wav',
+      language: LanguageCode.SPANISH,
+      format: TranscriptionFormat.SRT,
+    })
+  ).raw;
 
 test('a single outcome is returned on every call', async () => {
   const t = new MockTranscriber('canned');
@@ -27,23 +33,28 @@ test('an Error outcome is thrown and the next call still succeeds', async () => 
 
 test('every call is recorded with the arguments it received', async () => {
   const t = new MockTranscriber('x');
-  await t.transcribe('/tmp/a.wav', LanguageCode.ENGLISH, TranscriptionFormat.TEXT, 'glossary');
-
-  assert.equal(t.calls.length, 1);
-  assert.deepEqual(t.calls[0], {
+  await t.transcribe({
     audioFilePath: '/tmp/a.wav',
     language: LanguageCode.ENGLISH,
     format: TranscriptionFormat.TEXT,
     prompt: 'glossary',
   });
+
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls[0]!.audioFilePath, '/tmp/a.wav');
+  assert.equal(t.calls[0]!.language, LanguageCode.ENGLISH);
+  assert.equal(t.calls[0]!.prompt, 'glossary');
 });
 
 test('progress is reported so callers driving a spinner are exercised', async () => {
   const seen: string[] = [];
   const t = new MockTranscriber('x');
-  await t.transcribe('/tmp/a.wav', LanguageCode.SPANISH, TranscriptionFormat.SRT, undefined, (s) =>
-    seen.push(s),
-  );
+  await t.transcribe({
+    audioFilePath: '/tmp/a.wav',
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.SRT,
+    onProgress: (s) => seen.push(s),
+  });
   assert.equal(seen.length, 1);
 });
 

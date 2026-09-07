@@ -4,6 +4,7 @@ import type { AppConfig } from './configManager.js';
 export interface CliFlags {
   manual?: boolean;
   file?: string;
+  speakers?: boolean;
   language?: string;
   glossary?: string;
   copy?: boolean;
@@ -12,6 +13,7 @@ export interface CliFlags {
 export interface ResolvedOptions {
   manual: boolean;
   file?: string;
+  diarize: boolean;
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
@@ -21,6 +23,7 @@ export const ENV_KEYS = {
   LANGUAGE: 'TRANSCRIBE_LANGUAGE',
   GLOSSARY: 'TRANSCRIBE_GLOSSARY',
   COPY: 'TRANSCRIBE_COPY',
+  SPEAKERS: 'TRANSCRIBE_SPEAKERS',
 } as const;
 
 export class OptionError extends Error {}
@@ -45,6 +48,7 @@ export function resolveOptions(
   return {
     manual: flags.manual === true,
     file: flags.file,
+    diarize: firstDefined(flags.speakers, parseBool(env[ENV_KEYS.SPEAKERS]), false),
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
     copyToClipboard: firstDefined(

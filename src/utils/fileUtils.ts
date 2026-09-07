@@ -23,6 +23,7 @@ export function getTimestampPaths(
     audioPath: path.join(dir, `${stem}${audioExt}`),
     srtPath: path.join(dir, `${stem}${EXT.SUBTITLES}`),
     textPath: path.join(dir, `${stem}${EXT.TEXT}`),
+    diarizedPath: path.join(dir, `${stem}${EXT.DIARIZED}`),
   };
 }
 

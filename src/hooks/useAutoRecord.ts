@@ -8,7 +8,12 @@ import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
 import { LANGUAGE_NAMES } from '../constants.js';
 
-export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () => void) {
+export function useAutoRecord(
+  appConfig: AppConfig,
+  glossary: string,
+  diarize: boolean,
+  exit: () => void,
+) {
   const [statusText, setStatusText] = useState('Initializing recording...');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -18,6 +23,7 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
   const [currentTextPath, setCurrentTextPath] = useState('');
+  const [currentDiarizedPath, setCurrentDiarizedPath] = useState('');
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const transcriberRef = useRef<WhisperTranscriber | null>(null);
@@ -44,6 +50,7 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
     setCurrentAudioPath(p.audioPath);
     setCurrentSrtPath(p.srtPath);
     setCurrentTextPath(p.textPath);
+    setCurrentDiarizedPath(p.diarizedPath);
 
     recorder.start(p.audioPath);
     setIsRecording(true);
@@ -67,7 +74,7 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
     setIsTranscribing(true);
     setFailure(null);
     setStatusText(
-      `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''})...`,
+      `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
     );
 
     try {
@@ -77,6 +84,8 @@ export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () =
         textPath: currentTextPath,
         language: activeLanguage,
         glossary: glossaryPrompt,
+        diarize,
+        diarizedPath: currentDiarizedPath,
         copyToClipboard: appConfig.autoCopy,
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),
       });

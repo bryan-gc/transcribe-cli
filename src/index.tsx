@@ -34,6 +34,7 @@ program
   .option('-f, --file <path>', 'Transcribe an existing audio file instead of recording')
   .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
   .option('-g, --glossary <name>', 'Glossary to use as context for this run')
+  .option('-s, --speakers', 'Detect and label who is speaking')
   .option('--no-copy', 'Do not copy the result to the clipboard')
   .parse(process.argv);
 
@@ -78,12 +79,19 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
   };
 
   if (options.file) {
-    return <ImportApp appConfig={effective} filePath={options.file} glossary={options.glossary} />;
+    return (
+      <ImportApp
+        appConfig={effective}
+        filePath={options.file}
+        glossary={options.glossary}
+        diarize={options.diarize}
+      />
+    );
   }
   return options.manual ? (
     <App appConfig={effective} />
   ) : (
-    <AutoRecordApp appConfig={effective} glossary={options.glossary} />
+    <AutoRecordApp appConfig={effective} glossary={options.glossary} diarize={options.diarize} />
   );
 }
 

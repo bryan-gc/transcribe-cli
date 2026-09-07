@@ -10,13 +10,15 @@ export function ImportApp({
   appConfig,
   filePath,
   glossary,
+  diarize,
 }: {
   appConfig: AppConfig;
   filePath: string;
   glossary: string;
+  diarize: boolean;
 }) {
   const { exit } = useApp();
-  const { state, actions } = useImportTranscribe(appConfig, filePath, glossary, exit);
+  const { state, actions } = useImportTranscribe(appConfig, filePath, glossary, diarize, exit);
 
   const {
     statusText,

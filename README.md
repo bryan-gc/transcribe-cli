@@ -94,6 +94,7 @@ else, and anything over 25 MB, is converted first, which needs `ffmpeg` installe
 |---|---|
 | `-m, --manual` | Open the interactive menu instead of recording straight away |
 | `-f, --file <path>` | Transcribe an existing audio file instead of recording |
+| `-s, --speakers` | Label who is speaking, for recordings with more than one voice |
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
 | `--no-copy` | Do not copy the result to the clipboard on this run |
@@ -105,6 +106,23 @@ transcribe-cli -l es                    # record and transcribe in Spanish
 transcribe-cli -l en -g devops          # English, with the devops glossary as context
 transcribe-cli --no-copy                # leave the clipboard alone this time
 ```
+
+### Speaker Labels
+
+For a meeting or an interview, `--speakers` attributes each turn to a voice:
+
+```bash
+transcribe-cli -f meeting.m4a --speakers
+```
+
+```
+[Speaker A] Did you look at the billing report?
+[Speaker B] Yes, I uploaded it yesterday.
+```
+
+The subtitles keep the same labels, with their timings. This uses a different, slower and dearer
+model than a plain transcription, so it is off unless you ask for it. A recording with a single
+voice is never labelled.
 
 Options are also read from the environment, which is handy in a shell alias:
 `TRANSCRIBE_LANGUAGE`, `TRANSCRIBE_GLOSSARY`, `TRANSCRIBE_COPY`.

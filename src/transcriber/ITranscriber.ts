@@ -1,18 +1,26 @@
 import type { LanguageCode, TranscriptionFormat } from '../constants.js';
 
+export interface DiarizedSegment {
+  speaker: string;
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface TranscribeOptions {
+  audioFilePath: string;
+  language: LanguageCode;
+  format: TranscriptionFormat;
+  prompt?: string;
+  diarize?: boolean;
+  onProgress?: (status: string) => void;
+}
+
+export interface TranscriptionResult {
+  raw: string;
+  segments?: DiarizedSegment[];
+}
+
 export interface ITranscriber {
-  /**
-   * Transcribes an audio file and returns the result as a string.
-   * @param audioFilePath Absolute or relative path to the audio file.
-   * @param language      Language code for the audio content.
-   * @param format        Desired response format.
-   * @param prompt        Optional context hint / glossary for the model.
-   */
-  transcribe(
-    audioFilePath: string,
-    language: LanguageCode,
-    format: TranscriptionFormat,
-    prompt?: string,
-    onProgress?: (status: string) => void,
-  ): Promise<string>;
+  transcribe(options: TranscribeOptions): Promise<TranscriptionResult>;
 }

@@ -33,6 +33,7 @@ export const EXT = {
   SUBTITLES: '.srt',
   TEXT: '.txt',
   GLOSSARY: '.txt',
+  DIARIZED: '.json',
 } as const;
 
 export function getPaths(basePath: string) {
@@ -170,9 +171,18 @@ export const AVAILABLE_LANGUAGES = Object.values(LanguageCode);
 export enum TranscriptionFormat {
   TEXT = 'text',
   SRT = 'srt',
+  DIARIZED = 'diarized_json',
 }
 
 export const WHISPER_MODEL = 'whisper-1' as const;
+
+export const DIARIZE_MODEL = 'gpt-4o-transcribe-diarize' as const;
+
+export const DIARIZE_CHUNKING = 'auto' as const;
+
+export const MIN_SUBTITLE_SEC = 1.2;
+
+export const SUBTITLE_MAX_CHARS = 84;
 
 export const SDK_MAX_RETRIES = 3 as const;
 

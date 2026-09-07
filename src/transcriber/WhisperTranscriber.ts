@@ -1,8 +1,10 @@
 import fs from 'fs';
 import OpenAI from 'openai';
-import type { ITranscriber } from './ITranscriber.js';
+import type { ITranscriber, TranscribeOptions, TranscriptionResult } from './ITranscriber.js';
+import { parseDiarized } from '../utils/diarizedParser.js';
 import {
-  LanguageCode,
+  DIARIZE_CHUNKING,
+  DIARIZE_MODEL,
   REQUEST_TIMEOUT_MS,
   SDK_MAX_RETRIES,
   TranscriptionFormat,
@@ -21,30 +23,35 @@ export class WhisperTranscriber implements ITranscriber {
     });
   }
 
-  async transcribe(
-    audioFilePath: string,
-    language: LanguageCode = LanguageCode.ENGLISH,
-    format: TranscriptionFormat = TranscriptionFormat.TEXT,
-    prompt?: string,
-    onProgress?: (status: string) => void,
-  ): Promise<string> {
-    if (!fs.existsSync(audioFilePath)) {
-      throw new Error(`Audio file not found: ${audioFilePath}`);
+  async transcribe(options: TranscribeOptions): Promise<TranscriptionResult> {
+    if (!fs.existsSync(options.audioFilePath)) {
+      throw new Error(`Audio file not found: ${options.audioFilePath}`);
     }
 
-    onProgress?.('Preparing audio stream...');
-    const fileStream = fs.createReadStream(audioFilePath);
+    const diarize = options.diarize === true;
+    options.onProgress?.('Preparing audio stream...');
+    const fileStream = fs.createReadStream(options.audioFilePath);
 
-    onProgress?.('Sending request to OpenAI Whisper API (uploading & processing)...');
+    options.onProgress?.(
+      diarize
+        ? 'Sending request to OpenAI (transcribing and labelling speakers)...'
+        : 'Sending request to OpenAI Whisper API (uploading & processing)...',
+    );
+
     const response = await this.openai.audio.transcriptions.create({
       file: fileStream,
-      model: WHISPER_MODEL,
-      language,
-      response_format: format,
-      ...(prompt ? { prompt } : {}),
+      model: diarize ? DIARIZE_MODEL : WHISPER_MODEL,
+      language: options.language,
+      response_format: diarize ? TranscriptionFormat.DIARIZED : options.format,
+      ...(diarize ? { chunking_strategy: DIARIZE_CHUNKING } : {}),
+      ...(options.prompt ? { prompt: options.prompt } : {}),
     });
 
-    onProgress?.('Response received from OpenAI.');
-    return response as unknown as string;
+    options.onProgress?.('Response received from OpenAI.');
+
+    if (!diarize) return { raw: response as unknown as string };
+
+    const raw = typeof response === 'string' ? response : JSON.stringify(response);
+    return { raw, segments: parseDiarized(raw) };
   }
 }
