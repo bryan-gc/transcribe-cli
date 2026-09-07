@@ -116,8 +116,8 @@ test('paths are grouped by day and land under the directory for their kind', () 
   const base = sandbox();
   const at = new Date(2026, 4, 15, 19, 11, 0);
 
-  const rec = getTimestampPaths(base, RecordingKind.RECORDED, at);
-  const imp = getTimestampPaths(base, RecordingKind.IMPORTED, at);
+  const rec = getTimestampPaths(base, RecordingKind.RECORDED, { now: at });
+  const imp = getTimestampPaths(base, RecordingKind.IMPORTED, { now: at });
 
   assert.equal(rec.audioPath, path.join(base, RECORDED, '2026-05-15', '19-11-00.wav'));
   assert.equal(rec.srtPath, path.join(base, RECORDED, '2026-05-15', '19-11-00.srt'));
@@ -133,6 +133,6 @@ test('recording is the kind assumed when none is given', () => {
 
 test('single-digit dates and times are zero padded', () => {
   const base = sandbox();
-  const p = getTimestampPaths(base, RecordingKind.RECORDED, new Date(2026, 0, 3, 4, 5, 6));
+  const p = getTimestampPaths(base, RecordingKind.RECORDED, { now: new Date(2026, 0, 3, 4, 5, 6) });
   assert.ok(p.audioPath.endsWith(path.join('2026-01-03', '04-05-06.wav')), p.audioPath);
 });

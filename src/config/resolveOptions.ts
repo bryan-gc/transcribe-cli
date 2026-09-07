@@ -3,6 +3,7 @@ import type { AppConfig } from './configManager.js';
 
 export interface CliFlags {
   manual?: boolean;
+  file?: string;
   language?: string;
   glossary?: string;
   copy?: boolean;
@@ -10,6 +11,7 @@ export interface CliFlags {
 
 export interface ResolvedOptions {
   manual: boolean;
+  file?: string;
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
@@ -42,6 +44,7 @@ export function resolveOptions(
 ): ResolvedOptions {
   return {
     manual: flags.manual === true,
+    file: flags.file,
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
     copyToClipboard: firstDefined(

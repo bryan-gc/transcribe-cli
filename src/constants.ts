@@ -13,6 +13,20 @@ export enum RecordingKind {
 
 export const LEGACY_DATA_DIR = 'tmp' as const;
 
+export const SUPPORTED_IMPORT_EXT = new Set([
+  '.mp3',
+  '.mp4',
+  '.mpeg',
+  '.mpga',
+  '.m4a',
+  '.wav',
+  '.webm',
+  '.flac',
+  '.ogg',
+]);
+
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
 /** File extensions the app reads or writes. */
 export const EXT = {
   AUDIO: '.wav',
@@ -57,6 +71,7 @@ export enum Cmd {
   AFPLAY = 'afplay',
   PW_DUMP = 'pw-dump',
   SYSTEM_PROFILER = 'system_profiler',
+  FFMPEG = 'ffmpeg',
 }
 
 export enum Signal {

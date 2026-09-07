@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { App } from './components/App.js';
 import { AutoRecordApp } from './components/AutoRecordApp.js';
+import { ImportApp } from './components/ImportApp.js';
 import { SetupPrompt } from './components/SetupPrompt.js';
 import { ConfigManager, type AppConfig } from './config/configManager.js';
 import {
@@ -30,6 +31,7 @@ program
   .description(pkg.description)
   .version(pkg.version, '-v, --version', 'Output the current version')
   .option('-m, --manual', 'Open the interactive manual menu')
+  .option('-f, --file <path>', 'Transcribe an existing audio file instead of recording')
   .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
   .option('-g, --glossary <name>', 'Glossary to use as context for this run')
   .option('--no-copy', 'Do not copy the result to the clipboard')
@@ -75,7 +77,14 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     autoCopy: options.copyToClipboard,
   };
 
-  return options.manual ? <App appConfig={effective} /> : <AutoRecordApp appConfig={effective} />;
+  if (options.file) {
+    return <ImportApp appConfig={effective} filePath={options.file} glossary={options.glossary} />;
+  }
+  return options.manual ? (
+    <App appConfig={effective} />
+  ) : (
+    <AutoRecordApp appConfig={effective} glossary={options.glossary} />
+  );
 }
 
 render(<Root initialConfig={config} options={options} />);

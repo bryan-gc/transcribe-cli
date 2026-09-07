@@ -2,21 +2,40 @@ import fs from 'fs';
 import path from 'path';
 import { DIR, EXT, Encoding, RecordingKind, getPaths } from '../constants.js';
 
+export interface TimestampPathOptions {
+  now?: Date;
+  originalName?: string;
+  audioExt?: string;
+}
+
 export function getTimestampPaths(
   basePath: string,
   kind: RecordingKind = RecordingKind.RECORDED,
-  now: Date = new Date(),
+  { now = new Date(), originalName, audioExt = EXT.AUDIO }: TimestampPathOptions = {},
 ) {
   const pad = (n: number) => String(n).padStart(2, '0');
   const folder = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const base = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const stem = originalName ? `${time}__${sanitizeName(originalName)}` : time;
   const dir = path.resolve(basePath, DIR.DATA, kind, folder);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return {
-    audioPath: path.join(dir, `${base}${EXT.AUDIO}`),
-    srtPath: path.join(dir, `${base}${EXT.SUBTITLES}`),
-    textPath: path.join(dir, `${base}${EXT.TEXT}`),
+    audioPath: path.join(dir, `${stem}${audioExt}`),
+    srtPath: path.join(dir, `${stem}${EXT.SUBTITLES}`),
+    textPath: path.join(dir, `${stem}${EXT.TEXT}`),
   };
+}
+
+export function sanitizeName(name: string): string {
+  const stem = path.basename(name, path.extname(name));
+  const ascii = stem.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const slug = ascii
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+  return slug || 'audio';
 }
 
 /**

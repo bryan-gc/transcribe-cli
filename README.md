@@ -17,6 +17,9 @@ sudo apt-get install sox libsox-fmt-all
 brew install sox
 ```
 
+`ffmpeg` is only needed to import audio files that are not already in a format the API accepts
+(`sudo apt install ffmpeg`, or `brew install ffmpeg`).
+
 ### Windows
 1. Download the binaries from [SoX](https://sourceforge.net/projects/sox/).
 2. Add the SoX folder to your `PATH` environment variable.
@@ -68,11 +71,29 @@ Navigate the interactive menu with:
 - **Enter** — confirm selection
 - **Hotkeys** — press the letter shown in brackets (e.g., `r` to record, `t` to transcribe, `q` to quit)
 
+### 3. Transcribing a File You Already Have
+
+Point the tool at an audio file instead of recording one:
+
+```bash
+transcribe-cli -f ~/Downloads/AUD-20260906-WA0012.opus
+transcribe-cli --file "meeting.m4a" -l en
+```
+
+A copy of the audio is kept in `transcriptions/imported/`, with the transcription beside it, the
+same way recordings are stored. Your original file is not touched.
+
+`mp3`, `mp4`, `m4a`, `wav`, `webm`, `flac`, `ogg`, `mpeg` and `mpga` are sent as they are. Anything
+else, and anything over 25 MB, is converted first, which needs `ffmpeg` installed.
+
+---
+
 ### CLI Options
 
 | Option | What it does |
 |---|---|
 | `-m, --manual` | Open the interactive menu instead of recording straight away |
+| `-f, --file <path>` | Transcribe an existing audio file instead of recording |
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
 | `--no-copy` | Do not copy the result to the clipboard on this run |

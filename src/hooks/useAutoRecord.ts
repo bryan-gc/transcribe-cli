@@ -8,7 +8,7 @@ import { listMicDevices } from '../audio/micDevices.js';
 import { getTimestampPaths, readGlossaryContent, getInitialGlossary } from '../utils/fileUtils.js';
 import { LANGUAGE_NAMES } from '../constants.js';
 
-export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
+export function useAutoRecord(appConfig: AppConfig, glossary: string, exit: () => void) {
   const [statusText, setStatusText] = useState('Initializing recording...');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -31,7 +31,7 @@ export function useAutoRecord(appConfig: AppConfig, exit: () => void) {
     label: activeMicId,
   };
 
-  const activeGlossary = getInitialGlossary(appConfig.basePath);
+  const activeGlossary = glossary || getInitialGlossary(appConfig.basePath);
 
   useEffect(() => {
     const recorder = new AudioRecorder();
