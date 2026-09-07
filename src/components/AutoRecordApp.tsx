@@ -5,6 +5,13 @@ import { Header } from './Header.js';
 import { useAutoRecord } from '../hooks/useAutoRecord.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
+import {
+  clipboardField,
+  engineField,
+  glossaryField,
+  languageField,
+  tookField,
+} from './statusFields.js';
 
 export function AutoRecordApp({
   appConfig,
@@ -24,6 +31,7 @@ export function AutoRecordApp({
     isTranscribing,
     transcriptionResult,
     failure,
+    lastRun,
     currentAudioPath,
     activeLanguage,
     activeMic,
@@ -58,10 +66,14 @@ export function AutoRecordApp({
         title="=== transcribe-cli (Auto Record) ==="
         statusText={statusText}
         isBusy={isRecording || isTranscribing}
-        activeLanguage={activeLanguage}
-        glossaryLabel={glossaryLabel}
-        micLabel={activeMic.label}
-        clipboardEnabled={appConfig.autoCopy}
+        fields={[
+          languageField(activeLanguage),
+          glossaryField(glossaryLabel),
+          { label: 'Microphone', value: activeMic.label },
+          engineField(appConfig.engine, lastRun),
+          ...tookField(lastRun),
+          clipboardField(appConfig.autoCopy, lastRun),
+        ]}
       />
 
       {failure !== null && (

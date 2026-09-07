@@ -1,6 +1,9 @@
 import type { ITranscriber, TranscribeOptions, TranscriptionResult } from './ITranscriber.js';
 import { parseDiarized } from '../utils/diarizedParser.js';
 
+export const MOCK_ENGINE = 'mock';
+export const MOCK_MODEL = 'canned';
+
 export class MockTranscriber implements ITranscriber {
   readonly calls: TranscribeOptions[] = [];
   private readonly outcomes: (string | Error)[];
@@ -21,6 +24,9 @@ export class MockTranscriber implements ITranscriber {
     this.index += 1;
     if (outcome instanceof Error) throw outcome;
 
-    return options.diarize ? { raw: outcome, segments: parseDiarized(outcome) } : { raw: outcome };
+    const base = { engine: MOCK_ENGINE, model: MOCK_MODEL };
+    return options.diarize
+      ? { ...base, raw: outcome, segments: parseDiarized(outcome) }
+      : { ...base, raw: outcome };
   }
 }

@@ -5,6 +5,7 @@ import {
   describeTranscriptionError,
   describeOutcome,
   runTranscription,
+  type TranscriptionOutcome,
 } from '../utils/runTranscription.js';
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
 import { readGlossaryContent } from '../utils/fileUtils.js';
@@ -22,6 +23,7 @@ export function useImportTranscribe(
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
+  const [lastRun, setLastRun] = useState<TranscriptionOutcome | null>(null);
 
   const transcriberRef = useRef(createTranscriber(appConfig));
   const importedRef = useRef<ImportedAudio | null>(null);
@@ -52,6 +54,7 @@ export function useImportTranscribe(
         });
 
         setTranscriptionResult(outcome.text);
+        setLastRun(outcome);
         setStatusText(describeOutcome(outcome));
         setTimeout(exit, 500);
       } catch (err: unknown) {
@@ -87,6 +90,7 @@ export function useImportTranscribe(
       isTranscribing,
       transcriptionResult,
       failure,
+      lastRun,
       language,
       glossary,
       sourceName: path.basename(filePath),

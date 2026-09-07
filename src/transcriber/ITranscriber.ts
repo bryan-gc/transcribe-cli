@@ -16,9 +16,18 @@ export interface TranscribeOptions {
   onProgress?: (status: string) => void;
 }
 
+export interface TranscriptionUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
 export interface TranscriptionResult {
   raw: string;
   segments?: DiarizedSegment[];
+  engine: string;
+  model: string;
+  usage?: TranscriptionUsage;
 }
 
 export interface ITranscriber {

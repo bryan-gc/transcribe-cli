@@ -1,6 +1,12 @@
 import fs from 'fs';
 import OpenAI from 'openai';
-import type { ITranscriber, TranscribeOptions, TranscriptionResult } from './ITranscriber.js';
+import type {
+  ITranscriber,
+  TranscribeOptions,
+  TranscriptionResult,
+  TranscriptionUsage,
+} from './ITranscriber.js';
+import { Engine } from '../config/configManager.js';
 import { parseDiarized } from '../utils/diarizedParser.js';
 import {
   DIARIZE_CHUNKING,
@@ -10,6 +16,18 @@ import {
   TranscriptionFormat,
   WHISPER_MODEL,
 } from '../constants.js';
+
+function readUsage(response: unknown): TranscriptionUsage | undefined {
+  const usage = (response as { usage?: Record<string, number> })?.usage;
+  if (!usage) return undefined;
+  const input = usage.input_tokens ?? 0;
+  const output = usage.output_tokens ?? 0;
+  return {
+    inputTokens: input,
+    outputTokens: output,
+    totalTokens: usage.total_tokens ?? input + output,
+  };
+}
 
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
@@ -49,9 +67,18 @@ export class WhisperTranscriber implements ITranscriber {
 
     options.onProgress?.('Response received from OpenAI.');
 
-    if (!diarize) return { raw: response as unknown as string };
+    const model = diarize ? DIARIZE_MODEL : WHISPER_MODEL;
+    if (!diarize) {
+      return { raw: response as unknown as string, engine: Engine.OPENAI, model };
+    }
 
     const raw = typeof response === 'string' ? response : JSON.stringify(response);
-    return { raw, segments: parseDiarized(raw) };
+    return {
+      raw,
+      segments: parseDiarized(raw),
+      engine: Engine.OPENAI,
+      model,
+      usage: readUsage(response),
+    };
   }
 }

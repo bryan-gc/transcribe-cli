@@ -7,6 +7,7 @@ import { MicTest } from './MicTest.js';
 import { Header } from './Header.js';
 import { useTranscriberApp } from '../hooks/useTranscriberApp.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
+import { clipboardField, engineField, glossaryField, languageField } from './statusFields.js';
 import type { AppConfig } from '../config/configManager.js';
 import {
   EXT,
@@ -117,11 +118,13 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         title="=== transcribe-cli ==="
         statusText={statusText}
         isBusy={isRecording || isTranscribing}
-        activeLanguage={activeLanguage}
-        glossaryLabel={glossaryLabel}
-        micLabel={activeMic.label}
-        clipboardEnabled={clipboardEnabled}
-        showClipboardHotkey={true}
+        fields={[
+          languageField(activeLanguage),
+          glossaryField(glossaryLabel),
+          { label: 'Microphone', value: activeMic.label },
+          engineField(appConfig.engine, null),
+          clipboardField(clipboardEnabled, null),
+        ]}
       />
 
       {/* ── Main Menu ── */}

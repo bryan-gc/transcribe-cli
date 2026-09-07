@@ -1,5 +1,5 @@
 import fs from 'fs';
-import type { ITranscriber } from '../transcriber/ITranscriber.js';
+import type { ITranscriber, TranscriptionUsage } from '../transcriber/ITranscriber.js';
 import { extractTextFromSrt } from './srtParser.js';
 import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
@@ -28,6 +28,10 @@ export interface TranscriptionOutcome {
   text: string;
   clipboard: ClipboardOutcome;
   clipboardError?: string;
+  engine: string;
+  model: string;
+  tookMs: number;
+  usage?: TranscriptionUsage;
 }
 
 export async function runTranscription(
@@ -38,6 +42,7 @@ export async function runTranscription(
     throw new Error(`Audio file not found: ${job.audioPath}`);
   }
 
+  const startedAt = Date.now();
   const result = await transcriber.transcribe({
     audioFilePath: job.audioPath,
     language: job.language,
@@ -60,18 +65,32 @@ export async function runTranscription(
     fs.writeFileSync(job.diarizedPath, result.raw, Encoding.UTF8);
   }
 
-  if (!job.copyToClipboard) return { text: cleanText, clipboard: ClipboardOutcome.OFF };
+  const base = {
+    text: cleanText,
+    engine: result.engine,
+    model: result.model,
+    tookMs: Date.now() - startedAt,
+    usage: result.usage,
+  };
+
+  if (!job.copyToClipboard) return { ...base, clipboard: ClipboardOutcome.OFF };
 
   try {
     await copyTextToClipboard(cleanText);
-    return { text: cleanText, clipboard: ClipboardOutcome.COPIED };
+    return { ...base, clipboard: ClipboardOutcome.COPIED };
   } catch (error) {
     return {
-      text: cleanText,
+      ...base,
       clipboard: ClipboardOutcome.FAILED,
       clipboardError: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+export function formatDuration(ms: number): string {
+  const total = Math.round(ms / 1000);
+  if (total < 60) return `${total}s`;
+  return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`;
 }
 
 export function describeOutcome(outcome: TranscriptionOutcome): string {

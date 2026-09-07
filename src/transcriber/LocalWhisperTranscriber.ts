@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { spawn, type ChildProcess } from 'child_process';
 import type { ITranscriber, TranscribeOptions, TranscriptionResult } from './ITranscriber.js';
-import type { LocalWhisperConfig } from '../config/configManager.js';
+import { Engine, type LocalWhisperConfig } from '../config/configManager.js';
 import { Encoding, EXT, ProcessEvent, StdioOption, TranscriptionFormat } from '../constants.js';
 
 export class LocalWhisperError extends Error {}
@@ -36,7 +36,11 @@ export class LocalWhisperTranscriber implements ITranscriber {
       if (!written) {
         throw new LocalWhisperError('WhisperX finished without writing a transcription.');
       }
-      return { raw: fs.readFileSync(path.join(outputDir, written), Encoding.UTF8) };
+      return {
+        raw: fs.readFileSync(path.join(outputDir, written), Encoding.UTF8),
+        engine: Engine.LOCAL,
+        model: this.config.model,
+      };
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });
     }

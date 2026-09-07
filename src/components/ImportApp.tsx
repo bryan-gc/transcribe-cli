@@ -5,6 +5,13 @@ import { Header } from './Header.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
+import {
+  clipboardField,
+  engineField,
+  glossaryField,
+  languageField,
+  tookField,
+} from './statusFields.js';
 
 export function ImportApp({
   appConfig,
@@ -25,6 +32,7 @@ export function ImportApp({
     isTranscribing,
     transcriptionResult,
     failure,
+    lastRun,
     language,
     sourceName,
     audioPath,
@@ -52,10 +60,14 @@ export function ImportApp({
         title="=== transcribe-cli (Import) ==="
         statusText={statusText}
         isBusy={isTranscribing}
-        activeLanguage={language}
-        glossaryLabel={glossaryLabel}
-        micLabel={sourceName}
-        clipboardEnabled={appConfig.autoCopy}
+        fields={[
+          languageField(language),
+          glossaryField(glossaryLabel),
+          { label: 'Audio file', value: sourceName },
+          engineField(appConfig.engine, lastRun),
+          ...tookField(lastRun),
+          clipboardField(appConfig.autoCopy, lastRun),
+        ]}
       />
 
       {failure !== null && (

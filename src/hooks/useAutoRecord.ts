@@ -6,6 +6,7 @@ import {
   describeTranscriptionError,
   describeOutcome,
   runTranscription,
+  type TranscriptionOutcome,
 } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
@@ -23,6 +24,7 @@ export function useAutoRecord(
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
+  const [lastRun, setLastRun] = useState<TranscriptionOutcome | null>(null);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
@@ -95,6 +97,7 @@ export function useAutoRecord(
       });
 
       setTranscriptionResult(outcome.text);
+      setLastRun(outcome);
       setStatusText(describeOutcome(outcome));
       setTimeout(exit, 500);
     } catch (err: unknown) {
@@ -140,6 +143,7 @@ export function useAutoRecord(
       isTranscribing,
       transcriptionResult,
       failure,
+      lastRun,
       currentAudioPath,
       activeLanguage,
       activeMic,
