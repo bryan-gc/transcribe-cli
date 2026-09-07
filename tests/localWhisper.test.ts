@@ -7,6 +7,7 @@ import { buildArgs, LocalWhisperTranscriber } from '../src/transcriber/LocalWhis
 import {
   createTranscriber,
   needsApiKey,
+  needsSetup,
   MOCK_ENV_KEY,
   MOCK_FIXTURE_ENV_KEY,
 } from '../src/transcriber/createTranscriber.js';
@@ -139,4 +140,16 @@ test('the API engine without a key says what to do instead of quoting the SDK', 
     () => createTranscriber(config({ apiKey: '' }), {}),
     /No API key configured.*--local/s,
   );
+});
+
+test('a base path that does not exist yet is created, not treated as unconfigured', () => {
+  const cfg = config({ basePath: '/tmp/a-path-that-is-not-there-yet' });
+  assert.equal(needsSetup(cfg, {}), false);
+});
+
+test('setup is only asked for when something is genuinely unset', () => {
+  assert.equal(needsSetup(config({ basePath: '' }), {}), true);
+  assert.equal(needsSetup(config({ apiKey: '' }), {}), true);
+  assert.equal(needsSetup(config({ apiKey: '', engine: Engine.LOCAL }), {}), false);
+  assert.equal(needsSetup(config({ apiKey: '' }), { [MOCK_ENV_KEY]: '1' }), false);
 });

@@ -37,3 +37,8 @@ function isMockMode(env: NodeJS.ProcessEnv): boolean {
 export function needsApiKey(config: AppConfig, env: NodeJS.ProcessEnv = process.env): boolean {
   return !isMockMode(env) && config.engine !== Engine.LOCAL;
 }
+
+export function needsSetup(config: AppConfig, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (config.basePath.trim() === '') return true;
+  return needsApiKey(config, env) && config.apiKey === '';
+}

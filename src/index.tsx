@@ -17,7 +17,7 @@ import {
   type ResolvedOptions,
 } from './config/resolveOptions.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
-import { needsApiKey } from './transcriber/createTranscriber.js';
+import { needsSetup } from './transcriber/createTranscriber.js';
 import { activeCapabilities, formatReport, runChecks } from './system/doctor.js';
 import { AVAILABLE_LANGUAGES } from './constants.js';
 
@@ -66,16 +66,15 @@ try {
   process.exit(1);
 }
 
-const needsSetup =
-  !basePathReady || (needsApiKey({ ...config, engine: options.engine }) && !config.apiKey);
+const setupRequired = needsSetup({ ...config, engine: options.engine });
 
-if (!needsSetup) {
+if (!setupRequired) {
   ConfigManager.initializeBasePath(config.basePath);
 }
 
 function Root({ initialConfig, options }: { initialConfig: AppConfig; options: ResolvedOptions }) {
   const [appConfig, setAppConfig] = useState(initialConfig);
-  const [pendingSetup, setPendingSetup] = useState(needsSetup);
+  const [pendingSetup, setPendingSetup] = useState(setupRequired);
 
   if (pendingSetup) {
     return (
