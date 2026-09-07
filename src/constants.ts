@@ -196,6 +196,7 @@ export const REQUEST_TIMEOUT_MS = 20 * 60 * 1000;
 
 export enum ViewMode {
   MAIN = 'MAIN',
+  ENGINES = 'ENGINES',
   LANGUAGES = 'LANGUAGES',
   GLOSSARIES = 'GLOSSARIES',
   MICROPHONES = 'MICROPHONES',
@@ -203,6 +204,7 @@ export enum ViewMode {
 }
 
 export enum MenuAction {
+  CHANGE_ENGINE = 'e',
   RECORD = 'r',
   PAUSE = 'p',
   STOP = 's',

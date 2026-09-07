@@ -8,6 +8,7 @@ import {
   describeOutcome,
   runTranscription,
 } from '../utils/runTranscription.js';
+import type { Engine } from '../config/configManager.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
 import {
@@ -28,6 +29,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [clipboardEnabled, setClipboardEnabled] = useState(appConfig.autoCopy);
+  const [activeEngine, setActiveEngine] = useState<Engine>(appConfig.engine);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
@@ -117,6 +119,10 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
 
         case MenuAction.CHANGE_LANGUAGE:
           setViewMode(ViewMode.LANGUAGES);
+          break;
+
+        case MenuAction.CHANGE_ENGINE:
+          setViewMode(ViewMode.ENGINES);
           break;
 
         case MenuAction.CHANGE_GLOSSARY:
@@ -212,6 +218,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       currentTextPath,
       activeLanguage,
       activeGlossary,
+      activeEngine,
       activeMic,
       pendingMic,
       micDevices,
@@ -224,6 +231,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       setStatusText,
       setActiveLanguage,
       setActiveGlossary,
+      setActiveEngine,
       setActiveMic,
       setPendingMic,
       handleAction,

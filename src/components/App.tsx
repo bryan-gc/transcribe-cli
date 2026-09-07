@@ -8,7 +8,7 @@ import { Header } from './Header.js';
 import { useTranscriberApp } from '../hooks/useTranscriberApp.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
 import { clipboardField, engineField, glossaryField, languageField } from './statusFields.js';
-import type { AppConfig } from '../config/configManager.js';
+import { Engine, type AppConfig } from '../config/configManager.js';
 import {
   EXT,
   NONE_OPTION_VALUE,
@@ -20,18 +20,23 @@ import {
   type LanguageCode,
 } from '../constants.js';
 
-const MAIN_OPTIONS: { id: MenuAction; label: string }[] = [
-  { id: MenuAction.RECORD, label: `Record [${MenuAction.RECORD}]` },
-  { id: MenuAction.PAUSE, label: `Pause [${MenuAction.PAUSE}]` },
-  { id: MenuAction.STOP, label: `Stop [${MenuAction.STOP}]` },
-  { id: MenuAction.TRANSCRIBE, label: `Transcribe [${MenuAction.TRANSCRIBE}]` },
-  { id: MenuAction.CHANGE_LANGUAGE, label: `Change Language [${MenuAction.CHANGE_LANGUAGE}]` },
-  { id: MenuAction.CHANGE_GLOSSARY, label: `Change Glossary [${MenuAction.CHANGE_GLOSSARY}]` },
-  {
-    id: MenuAction.CHANGE_MICROPHONE,
-    label: `Change Microphone [${MenuAction.CHANGE_MICROPHONE}]`,
-  },
-  { id: MenuAction.QUIT, label: `Quit [${MenuAction.QUIT}]` },
+interface MenuEntry {
+  id: MenuAction;
+  label: string;
+  section: 'Actions' | 'Settings' | '';
+}
+
+const MAIN_OPTIONS: MenuEntry[] = [
+  { id: MenuAction.RECORD, label: 'Record', section: 'Actions' },
+  { id: MenuAction.PAUSE, label: 'Pause', section: 'Actions' },
+  { id: MenuAction.STOP, label: 'Stop', section: 'Actions' },
+  { id: MenuAction.TRANSCRIBE, label: 'Transcribe', section: 'Actions' },
+  { id: MenuAction.CHANGE_LANGUAGE, label: 'Language', section: 'Settings' },
+  { id: MenuAction.CHANGE_GLOSSARY, label: 'Glossary', section: 'Settings' },
+  { id: MenuAction.CHANGE_MICROPHONE, label: 'Microphone', section: 'Settings' },
+  { id: MenuAction.CHANGE_ENGINE, label: 'Engine', section: 'Settings' },
+  { id: MenuAction.TOGGLE_CLIPBOARD, label: 'Clipboard', section: 'Settings' },
+  { id: MenuAction.QUIT, label: 'Quit', section: '' },
 ];
 
 const VALID_ACTION_KEYS = new Set(Object.values(MenuAction) as string[]);
@@ -51,6 +56,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     currentTextPath,
     activeLanguage,
     activeGlossary,
+    activeEngine,
     activeMic,
     pendingMic,
     micDevices,
@@ -64,6 +70,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     setStatusText,
     setActiveLanguage,
     setActiveGlossary,
+    setActiveEngine,
     setActiveMic,
     setPendingMic,
     handleAction,
@@ -101,6 +108,17 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
   // ── Derived ────────────────────────────────────────────────────────────────
   const glossaryLabel = activeGlossary ? path.basename(activeGlossary, EXT.GLOSSARY) : '(none)';
 
+  const extraMics = appConfig.microphonePriority.length - 1;
+  const micSummary = extraMics > 0 ? `${activeMic.label}  (+${extraMics} more)` : activeMic.label;
+
+  const settingValues: Partial<Record<MenuAction, string>> = {
+    [MenuAction.CHANGE_LANGUAGE]: LANGUAGE_NAMES[activeLanguage],
+    [MenuAction.CHANGE_GLOSSARY]: glossaryLabel,
+    [MenuAction.CHANGE_MICROPHONE]: micSummary,
+    [MenuAction.CHANGE_ENGINE]: engineField(activeEngine, null).value,
+    [MenuAction.TOGGLE_CLIPBOARD]: clipboardEnabled ? 'On' : 'Off',
+  };
+
   const languageOptions = AVAILABLE_LANGUAGES.map((lang) => ({
     label: LANGUAGE_NAMES[lang],
     value: lang,
@@ -130,14 +148,26 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
       {/* ── Main Menu ── */}
       {viewMode === ViewMode.MAIN && (
         <Box flexDirection="column">
-          {MAIN_OPTIONS.map((opt, i) => (
-            <Text key={opt.id} color={i === selectedIndex ? 'cyan' : undefined}>
-              {i === selectedIndex ? '> ' : '  '}
-              {opt.label}
-            </Text>
-          ))}
+          {MAIN_OPTIONS.map((opt, i) => {
+            const startsSection = i > 0 && MAIN_OPTIONS[i - 1]!.section !== opt.section;
+            const first = MAIN_OPTIONS.findIndex((o) => o.section === opt.section) === i;
+            return (
+              <Box key={opt.id} flexDirection="column">
+                {startsSection && <Text> </Text>}
+                {first && opt.section !== '' && (
+                  <Text bold color="cyan">
+                    {opt.section}
+                  </Text>
+                )}
+                <Text color={i === selectedIndex ? 'cyan' : undefined}>
+                  {i === selectedIndex ? '> ' : '  '}
+                  {`${opt.label} [${opt.id}]`.padEnd(20)}
+                  <Text color="magenta">{settingValues[opt.id] ?? ''}</Text>
+                </Text>
+              </Box>
+            );
+          })}
 
-          {/* ── Last transcription result ── */}
           {transcriptionResult !== '' && (
             <Box flexDirection="column" marginTop={1}>
               <Text bold color="cyan">
@@ -152,6 +182,24 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
             <Text dimColor>↑↓ navigate · Enter confirm · or press key in [brackets]</Text>
           </Box>
         </Box>
+      )}
+
+      {viewMode === ViewMode.ENGINES && (
+        <Picker
+          title="Select Engine"
+          options={[
+            { label: 'OpenAI API', value: Engine.OPENAI },
+            { label: 'Local · WhisperX', value: Engine.LOCAL },
+          ]}
+          onSelect={(value) => {
+            const engine = value as Engine;
+            setActiveEngine(engine);
+            saveConfig({ engine });
+            setStatusText(`Engine set to ${engineField(engine, null).value}.`);
+            setViewMode(ViewMode.MAIN);
+          }}
+          onCancel={() => setViewMode(ViewMode.MAIN)}
+        />
       )}
 
       {/* ── Language Picker ── */}

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import React, { useState } from 'react';
 import { render } from 'ink';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -32,7 +32,8 @@ program
   .name('transcribe-cli')
   .description(pkg.description)
   .version(pkg.version, '-v, --version', 'Output the current version')
-  .option('-m, --manual', 'Open the interactive manual menu')
+  .option('-c, --config', 'Open the configuration menu')
+  .addOption(new Option('-m, --manual').hideHelp())
   .option('-f, --file <path>', 'Transcribe an existing audio file instead of recording')
   .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
   .option('-g, --glossary <name>', 'Glossary to use as context for this run')

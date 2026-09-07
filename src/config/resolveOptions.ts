@@ -3,6 +3,7 @@ import { Engine, type AppConfig } from './configManager.js';
 
 export interface CliFlags {
   manual?: boolean;
+  config?: boolean;
   file?: string;
   speakers?: boolean;
   local?: boolean;
@@ -50,7 +51,7 @@ export function resolveOptions(
   availableGlossaries: string[] = [],
 ): ResolvedOptions {
   return {
-    manual: flags.manual === true,
+    manual: flags.manual === true || flags.config === true,
     file: flags.file,
     diarize: firstDefined(flags.speakers, parseBool(env[ENV_KEYS.SPEAKERS]), false),
     engine: resolveEngine(flags, env, config),
