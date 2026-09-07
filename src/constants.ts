@@ -153,7 +153,12 @@ export enum ActionHotkey {
   PLAYBACK = 'p',
   STOP = 's',
   CONFIRM = 'b',
+  PAUSE = ' ',
 }
+
+export const HOTKEY_PAUSE_LABEL = 'space' as const;
+
+export const RESUME_STALL_CHECK_MS = 3000 as const;
 
 // ─── Transcriber Constants ────────────────────────────────────────────────────
 export enum LanguageCode {

@@ -30,6 +30,7 @@ export function AutoRecordApp({
   const {
     statusText,
     isRecording,
+    isPaused,
     isTranscribing,
     transcriptionResult,
     failure,
@@ -41,7 +42,7 @@ export function AutoRecordApp({
     currentTextPath,
   } = state;
 
-  const { handleStopAndTranscribe, retry, forceStop } = actions;
+  const { handleStopAndTranscribe, togglePause, retry, forceStop } = actions;
 
   useInput(
     (input, key) => {
@@ -56,6 +57,7 @@ export function AutoRecordApp({
         return;
       }
       if (key.return) handleStopAndTranscribe();
+      if (input === ActionHotkey.PAUSE) togglePause();
     },
     { isActive: (isRecording || failure !== null) && !isTranscribing },
   );
@@ -67,7 +69,7 @@ export function AutoRecordApp({
       <Header
         title="=== transcribe-cli (Auto Record) ==="
         statusText={statusText}
-        isBusy={isRecording || isTranscribing}
+        isBusy={(isRecording && !isPaused) || isTranscribing}
         fields={[
           languageField(activeLanguage),
           glossaryField(glossaryLabel),
