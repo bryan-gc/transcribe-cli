@@ -68,17 +68,34 @@ Navigate the interactive menu with:
 - **Enter** — confirm selection
 - **Hotkeys** — press the letter shown in brackets (e.g., `r` to record, `t` to transcribe, `q` to quit)
 
-### Other CLI Options
+### CLI Options
+
+| Option | What it does |
+|---|---|
+| `-m, --manual` | Open the interactive menu instead of recording straight away |
+| `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
+| `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
+| `--no-copy` | Do not copy the result to the clipboard on this run |
+| `-v, --version` | Output the current version |
+| `-h, --help` | Display help |
 
 ```bash
-# Display help and all available commands
-transcribe-cli --help
-transcribe-cli -h
-
-# Output the current version
-transcribe-cli --version
-transcribe-cli -v
+transcribe-cli -l es                    # record and transcribe in Spanish
+transcribe-cli -l en -g devops          # English, with the devops glossary as context
+transcribe-cli --no-copy                # leave the clipboard alone this time
 ```
+
+Options are also read from the environment, which is handy in a shell alias:
+`TRANSCRIBE_LANGUAGE`, `TRANSCRIBE_GLOSSARY`, `TRANSCRIBE_COPY`.
+
+Where the same option is set in more than one place, the most specific one wins:
+
+```
+command line  >  environment  >  ~/.transcribe-cli/config.json  >  built-in default
+```
+
+A flag applies to that run only. Nothing on the command line changes the saved configuration —
+that is what the interactive menu is for.
 
 ---
 
