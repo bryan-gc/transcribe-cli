@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { LanguageCode } from '../constants.js';
+import { DIR, EXT, LanguageCode, LEGACY_DATA_DIR, RecordingKind } from '../constants.js';
 
 export interface AppConfig {
   apiKey: string;
@@ -56,10 +56,38 @@ export class ConfigManager {
     if (!fs.existsSync(basePath)) {
       fs.mkdirSync(basePath, { recursive: true });
     }
-    const tmpDir = path.join(basePath, 'tmp');
-    const glossariesDir = path.join(basePath, 'glossaries');
 
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-    if (!fs.existsSync(glossariesDir)) fs.mkdirSync(glossariesDir, { recursive: true });
+    ConfigManager.migrateLegacyLayout(basePath);
+
+    const dirs = [
+      path.join(basePath, DIR.DATA, RecordingKind.RECORDED),
+      path.join(basePath, DIR.DATA, RecordingKind.IMPORTED),
+      path.join(basePath, DIR.GLOSSARIES),
+      path.join(basePath, DIR.CACHE),
+    ];
+    for (const dir of dirs) {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    }
+  }
+
+  static migrateLegacyLayout(basePath: string): void {
+    const legacy = path.join(basePath, LEGACY_DATA_DIR);
+    const target = path.join(basePath, DIR.DATA, RecordingKind.RECORDED);
+    if (!fs.existsSync(legacy) || !fs.statSync(legacy).isDirectory()) return;
+    if (fs.existsSync(target)) return;
+
+    const cache = path.join(basePath, DIR.CACHE);
+    fs.mkdirSync(target, { recursive: true });
+    fs.mkdirSync(cache, { recursive: true });
+
+    const testFile = `mic-test${EXT.AUDIO}`;
+    for (const entry of fs.readdirSync(legacy)) {
+      const from = path.join(legacy, entry);
+      const to = entry === testFile ? path.join(cache, entry) : path.join(target, entry);
+      if (fs.existsSync(to)) continue;
+      fs.renameSync(from, to);
+    }
+
+    if (fs.readdirSync(legacy).length === 0) fs.rmdirSync(legacy);
   }
 }

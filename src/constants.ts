@@ -1,10 +1,17 @@
 import path from 'path';
 
-/** Names of directories used by the application at the project root. */
 export const DIR = {
-  TMP: 'tmp',
+  DATA: 'transcriptions',
   GLOSSARIES: 'glossaries',
+  CACHE: '.cache',
 } as const;
+
+export enum RecordingKind {
+  RECORDED = 'recorded',
+  IMPORTED = 'imported',
+}
+
+export const LEGACY_DATA_DIR = 'tmp' as const;
 
 /** File extensions the app reads or writes. */
 export const EXT = {
@@ -17,7 +24,7 @@ export const EXT = {
 export function getPaths(basePath: string) {
   return {
     GLOSSARIES_DIR: path.resolve(basePath, DIR.GLOSSARIES),
-    TEST_FILE: path.resolve(basePath, DIR.TMP, `mic-test${EXT.AUDIO}`),
+    TEST_FILE: path.resolve(basePath, DIR.CACHE, `mic-test${EXT.AUDIO}`),
   };
 }
 
