@@ -141,3 +141,24 @@ function listMacDevices(): MicDevice[] {
 
   return devices.length > 1 ? devices : [{ id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL }];
 }
+
+/**
+ * Picks the first microphone from `priority` that is currently connected.
+ *
+ * Falling back matters more than it sounds: the auto mode used to hand the recorder whatever id
+ * the configuration held, connected or not, and `arecord` answers a device that is not there by
+ * producing an empty file instead of failing. The recording was lost with nothing on screen to
+ * say so.
+ */
+export function resolveMicDevice(
+  priority: string[],
+  available: MicDevice[] = listMicDevices(),
+): { device: MicDevice; isFallback: boolean } {
+  for (const [index, id] of priority.entries()) {
+    const match = available.find((d) => d.id === id);
+    if (match) return { device: match, isFallback: index > 0 };
+  }
+  // listMicDevices always puts the system default first, on every platform.
+  const fallback = available[0] ?? { id: DEFAULT_DEVICE_ID, label: DEFAULT_DEVICE_LABEL };
+  return { device: fallback, isFallback: priority.length > 0 };
+}

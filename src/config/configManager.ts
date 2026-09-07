@@ -7,6 +7,8 @@ export interface AppConfig {
   apiKey: string;
   basePath: string;
   selectedMicrophone: string;
+  /** Microphone ids in order of preference; the first one connected is used. */
+  microphonePriority: string[];
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
 }
@@ -18,6 +20,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   apiKey: '',
   basePath: path.join(os.homedir(), 'transcribe_cli_data'),
   selectedMicrophone: 'default',
+  microphonePriority: [],
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
 };
@@ -30,7 +33,14 @@ export class ConfigManager {
     try {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
       const parsed = JSON.parse(content);
-      return { ...DEFAULT_CONFIG, ...parsed };
+      const config = { ...DEFAULT_CONFIG, ...parsed };
+
+      // A configuration written before the list existed carries the single microphone it chose,
+      // which becomes a list of one and keeps behaving the same way.
+      if (config.microphonePriority.length === 0 && config.selectedMicrophone) {
+        config.microphonePriority = [config.selectedMicrophone];
+      }
+      return config;
     } catch {
       return { ...DEFAULT_CONFIG };
     }

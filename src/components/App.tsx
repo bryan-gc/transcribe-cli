@@ -2,9 +2,11 @@ import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { Picker } from './Picker.js';
+import { PriorityPicker } from './PriorityPicker.js';
 import { MicTest } from './MicTest.js';
 import { Header } from './Header.js';
 import { useTranscriberApp } from '../hooks/useTranscriberApp.js';
+import { resolveMicDevice } from '../audio/micDevices.js';
 import type { AppConfig } from '../config/configManager.js';
 import {
   EXT,
@@ -108,11 +110,6 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     ...glossaryFiles.map((f) => ({ label: path.basename(f, EXT.GLOSSARY), value: f })),
   ];
 
-  const micOptions = micDevices.map((mic) => ({
-    label: mic.id === activeMic.id ? `${mic.label} (current)` : mic.label,
-    value: mic.id,
-  }));
-
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box flexDirection="column" padding={1}>
@@ -186,14 +183,21 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         />
       )}
 
-      {/* ── Microphone Picker ── */}
+      {/* ── Microphone Priority ── */}
       {viewMode === ViewMode.MICROPHONES && (
-        <Picker
-          title="Select Microphone"
-          options={micOptions}
-          onSelect={(value) => {
-            const mic = micDevices.find((d) => d.id === value) ?? { id: value, label: value };
-            setPendingMic(mic);
+        <PriorityPicker
+          title="Microphone Priority"
+          devices={micDevices}
+          priority={appConfig.microphonePriority}
+          onConfirm={(priority) => {
+            saveConfig({ microphonePriority: priority, selectedMicrophone: priority[0] ?? '' });
+            const resolved = resolveMicDevice(priority, micDevices).device;
+            setActiveMic(resolved);
+            setStatusText(`Microphone priority saved — using ${resolved.label}.`);
+            setViewMode(ViewMode.MAIN);
+          }}
+          onTest={(device) => {
+            setPendingMic(device);
             setViewMode(ViewMode.MIC_TEST);
           }}
           onCancel={() => setViewMode(ViewMode.MAIN)}
@@ -205,12 +209,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         <MicTest
           mic={pendingMic}
           basePath={appConfig.basePath}
-          onConfirm={() => {
-            setActiveMic(pendingMic);
-            saveConfig({ selectedMicrophone: pendingMic.id });
-            setStatusText(`Microphone set to: ${pendingMic.label}.`);
-            setViewMode(ViewMode.MAIN);
-          }}
+          onConfirm={() => setViewMode(ViewMode.MICROPHONES)}
           onCancel={() => setViewMode(ViewMode.MICROPHONES)}
         />
       )}
