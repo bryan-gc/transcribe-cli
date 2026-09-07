@@ -1,10 +1,12 @@
 import { AVAILABLE_LANGUAGES, EXT, LanguageCode } from '../constants.js';
-import type { AppConfig } from './configManager.js';
+import { Engine, type AppConfig } from './configManager.js';
 
 export interface CliFlags {
   manual?: boolean;
   file?: string;
   speakers?: boolean;
+  local?: boolean;
+  engine?: string;
   language?: string;
   glossary?: string;
   copy?: boolean;
@@ -14,6 +16,7 @@ export interface ResolvedOptions {
   manual: boolean;
   file?: string;
   diarize: boolean;
+  engine: Engine;
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
@@ -24,6 +27,7 @@ export const ENV_KEYS = {
   GLOSSARY: 'TRANSCRIBE_GLOSSARY',
   COPY: 'TRANSCRIBE_COPY',
   SPEAKERS: 'TRANSCRIBE_SPEAKERS',
+  ENGINE: 'TRANSCRIBE_ENGINE',
 } as const;
 
 export class OptionError extends Error {}
@@ -49,6 +53,7 @@ export function resolveOptions(
     manual: flags.manual === true,
     file: flags.file,
     diarize: firstDefined(flags.speakers, parseBool(env[ENV_KEYS.SPEAKERS]), false),
+    engine: resolveEngine(flags, env, config),
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
     copyToClipboard: firstDefined(
@@ -100,4 +105,18 @@ function resolveGlossary(raw: string | undefined, available: string[]): string {
       ? `No glossaries found, so "${wanted}" cannot be used.`
       : `Unknown glossary "${wanted}". Available: ${names.join(', ')}.`,
   );
+}
+
+function resolveEngine(flags: CliFlags, env: NodeJS.ProcessEnv, config: AppConfig): Engine {
+  if (flags.local === true) return Engine.LOCAL;
+  const raw = flags.engine ?? env[ENV_KEYS.ENGINE];
+  if (raw === undefined || raw.trim() === '') return config.engine;
+
+  const value = raw.trim().toLowerCase();
+  if (!Object.values(Engine).includes(value as Engine)) {
+    throw new OptionError(
+      `Unknown engine "${raw}". Available: ${Object.values(Engine).join(', ')}.`,
+    );
+  }
+  return value as Engine;
 }

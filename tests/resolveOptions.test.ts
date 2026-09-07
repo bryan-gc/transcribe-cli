@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveOptions, cliFlags, OptionError, ENV_KEYS } from '../src/config/resolveOptions.js';
-import { DEFAULT_CONFIG, type AppConfig } from '../src/config/configManager.js';
+import { DEFAULT_CONFIG, Engine, type AppConfig } from '../src/config/configManager.js';
 import { LanguageCode } from '../src/constants.js';
 
 const config = (over: Partial<AppConfig> = {}): AppConfig => ({ ...DEFAULT_CONFIG, ...over });
@@ -126,4 +126,27 @@ test('an option the user actually typed is kept', () => {
   const flags = cliFlags({ copy: false, language: 'fr' }, () => 'cli');
   assert.deepEqual(flags, { copy: false, language: 'fr' });
   assert.equal(resolveOptions(flags, config({ autoCopy: true }), {}).copyToClipboard, false);
+});
+
+test('--local picks the local engine whatever the configuration says', () => {
+  assert.equal(
+    resolveOptions({ local: true }, config({ engine: Engine.OPENAI }), {}).engine,
+    Engine.LOCAL,
+  );
+});
+
+test('--engine names the engine explicitly, for the day there is a third', () => {
+  assert.equal(resolveOptions({ engine: 'local' }, config(), {}).engine, Engine.LOCAL);
+  assert.equal(
+    resolveOptions({ engine: 'openai' }, config({ engine: Engine.LOCAL }), {}).engine,
+    Engine.OPENAI,
+  );
+});
+
+test('an unknown engine is rejected and the message lists the real ones', () => {
+  assert.throws(() => resolveOptions({ engine: 'whisper.cpp' }, config(), {}), /Unknown engine/);
+});
+
+test('with no flag the saved engine is kept', () => {
+  assert.equal(resolveOptions({}, config({ engine: Engine.LOCAL }), {}).engine, Engine.LOCAL);
 });

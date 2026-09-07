@@ -17,6 +17,7 @@ import {
   type ResolvedOptions,
 } from './config/resolveOptions.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
+import { needsApiKey } from './transcriber/createTranscriber.js';
 import { AVAILABLE_LANGUAGES } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,15 +36,17 @@ program
   .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
   .option('-g, --glossary <name>', 'Glossary to use as context for this run')
   .option('-s, --speakers', 'Detect and label who is speaking')
+  .option('--local', 'Use the local WhisperX engine instead of the API')
+  .option('--engine <name>', 'openai | local')
   .option('--no-copy', 'Do not copy the result to the clipboard')
   .parse(process.argv);
 
 const config = ConfigManager.load();
-const needsSetup = !config.apiKey || !ConfigManager.validateBasePath(config.basePath);
+const basePathReady = ConfigManager.validateBasePath(config.basePath);
 
 let options: ResolvedOptions;
 try {
-  const glossaries = needsSetup ? [] : loadGlossaryFiles(config.basePath);
+  const glossaries = basePathReady ? loadGlossaryFiles(config.basePath) : [];
   const flags = cliFlags(program.opts(), (key) => program.getOptionValueSource(key));
   options = resolveOptions(flags, config, process.env, glossaries);
 } catch (error) {
@@ -51,6 +54,9 @@ try {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
 }
+
+const needsSetup =
+  !basePathReady || (needsApiKey({ ...config, engine: options.engine }) && !config.apiKey);
 
 if (!needsSetup) {
   ConfigManager.initializeBasePath(config.basePath);
@@ -76,6 +82,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     ...appConfig,
     selectedLanguage: options.language,
     autoCopy: options.copyToClipboard,
+    engine: options.engine,
   };
 
   if (options.file) {

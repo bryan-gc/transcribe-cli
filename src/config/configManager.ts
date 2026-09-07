@@ -3,6 +3,18 @@ import path from 'path';
 import os from 'os';
 import { DIR, EXT, LanguageCode, LEGACY_DATA_DIR, RecordingKind } from '../constants.js';
 
+export enum Engine {
+  OPENAI = 'openai',
+  LOCAL = 'local',
+}
+
+export interface LocalWhisperConfig {
+  binPath: string;
+  model: string;
+  device: string;
+  computeType: string;
+}
+
 export interface AppConfig {
   apiKey: string;
   basePath: string;
@@ -10,6 +22,8 @@ export interface AppConfig {
   microphonePriority: string[];
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
+  engine: Engine;
+  localWhisper: LocalWhisperConfig;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
@@ -22,6 +36,13 @@ export const DEFAULT_CONFIG: AppConfig = {
   microphonePriority: [],
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
+  engine: Engine.OPENAI,
+  localWhisper: {
+    binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),
+    model: 'large-v3-turbo',
+    device: 'cuda',
+    computeType: 'float16',
+  },
 };
 
 export class ConfigManager {
@@ -32,7 +53,11 @@ export class ConfigManager {
     try {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
       const parsed = JSON.parse(content);
-      const config = { ...DEFAULT_CONFIG, ...parsed };
+      const config = {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        localWhisper: { ...DEFAULT_CONFIG.localWhisper, ...(parsed.localWhisper ?? {}) },
+      };
 
       if (config.microphonePriority.length === 0 && config.selectedMicrophone) {
         config.microphonePriority = [config.selectedMicrophone];

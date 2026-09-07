@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
 import { listMicDevices, resolveMicDevice, type MicDevice } from '../audio/micDevices.js';
-import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
+import { createTranscriber } from '../transcriber/createTranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
@@ -56,7 +56,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const recorderRef = useRef(new AudioRecorder());
-  const transcriber = useRef(new WhisperTranscriber(appConfig.apiKey));
+  const transcriber = useRef(createTranscriber(appConfig));
   const recorder = recorderRef.current;
   try {
     recorder.setDevice(activeMic.id);

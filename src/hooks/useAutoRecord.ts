@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
-import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
+import { createTranscriber } from '../transcriber/createTranscriber.js';
+import type { ITranscriber } from '../transcriber/ITranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
@@ -26,7 +27,7 @@ export function useAutoRecord(
   const [currentDiarizedPath, setCurrentDiarizedPath] = useState('');
 
   const recorderRef = useRef<AudioRecorder | null>(null);
-  const transcriberRef = useRef<WhisperTranscriber | null>(null);
+  const transcriberRef = useRef<ITranscriber | null>(null);
 
   const activeLanguage = appConfig.selectedLanguage;
   const { device: activeMic, isFallback: micIsFallback } = resolveMicDevice(
@@ -38,7 +39,7 @@ export function useAutoRecord(
   useEffect(() => {
     const recorder = new AudioRecorder();
     recorderRef.current = recorder;
-    transcriberRef.current = new WhisperTranscriber(appConfig.apiKey);
+    transcriberRef.current = createTranscriber(appConfig);
 
     try {
       recorder.setDevice(activeMic.id);

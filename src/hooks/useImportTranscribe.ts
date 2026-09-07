@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import path from 'path';
-import { WhisperTranscriber } from '../transcriber/WhisperTranscriber.js';
+import { createTranscriber } from '../transcriber/createTranscriber.js';
 import { describeTranscriptionError, runTranscription } from '../utils/runTranscription.js';
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
 import { readGlossaryContent } from '../utils/fileUtils.js';
@@ -19,7 +19,7 @@ export function useImportTranscribe(
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
 
-  const transcriberRef = useRef(new WhisperTranscriber(appConfig.apiKey));
+  const transcriberRef = useRef(createTranscriber(appConfig));
   const importedRef = useRef<ImportedAudio | null>(null);
 
   const language = appConfig.selectedLanguage;

@@ -95,6 +95,8 @@ else, and anything over 25 MB, is converted first, which needs `ffmpeg` installe
 | `-m, --manual` | Open the interactive menu instead of recording straight away |
 | `-f, --file <path>` | Transcribe an existing audio file instead of recording |
 | `-s, --speakers` | Label who is speaking, for recordings with more than one voice |
+| `--local` | Transcribe on this machine with WhisperX instead of the API |
+| `--engine <name>` | `openai` or `local`, the long form of `--local` |
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
 | `--no-copy` | Do not copy the result to the clipboard on this run |
@@ -123,6 +125,22 @@ transcribe-cli -f meeting.m4a --speakers
 The subtitles keep the same labels, with their timings. This uses a different, slower and dearer
 model than a plain transcription, so it is off unless you ask for it. A recording with a single
 voice is never labelled.
+
+### Transcribing Locally
+
+With WhisperX installed, transcription runs on your own machine: no network, no cost per minute.
+
+```bash
+./scripts/install-whisperx.sh      # a virtualenv of its own, no root needed
+transcribe-cli --local
+```
+
+The installer does not touch your system Python or any packages other projects depend on. Set
+`engine` to `local` in `~/.transcribe-cli/config.json` to make it the default, in which case no API
+key is needed at all.
+
+Speaker labels are not available locally yet; `--local --speakers` says so rather than quietly
+dropping them.
 
 Options are also read from the environment, which is handy in a shell alias:
 `TRANSCRIBE_LANGUAGE`, `TRANSCRIBE_GLOSSARY`, `TRANSCRIBE_COPY`.
