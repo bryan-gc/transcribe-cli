@@ -52,11 +52,7 @@ export function useImportTranscribe(
         });
 
         setTranscriptionResult(outcome.text);
-        setStatusText(
-          appConfig.autoCopy
-            ? '✅ Transcription done — copied to clipboard.'
-            : '✅ Transcription completed and saved.',
-        );
+        setStatusText(describeOutcome(outcome));
         setTimeout(exit, 500);
       } catch (err: unknown) {
         setFailure(describeTranscriptionError(err));
