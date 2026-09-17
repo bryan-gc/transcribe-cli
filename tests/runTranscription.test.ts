@@ -197,11 +197,18 @@ test('replacements also reach speaker-labelled transcripts, which get no prompt'
     path.join(import.meta.dirname, 'fixtures', 'diarized-response.json'),
     'utf-8',
   );
-  const j = job({ diarize: true, glossary: 'empezamos => arrancamos' });
+  const j = job({
+    diarize: true,
+    glossary: 'empezamos => arrancamos',
+    diarizedPath: path.join(os.tmpdir(), `diarized-${Date.now()}.json`),
+  });
   const outcome = await runTranscription(new MockTranscriber(diarized), j);
   assert.match(outcome.text, /arrancamos/);
   assert.doesNotMatch(outcome.text, /empezamos/);
   assert.match(fs.readFileSync(j.srtPath, 'utf-8'), /arrancamos/);
+  const saved = JSON.parse(fs.readFileSync(j.diarizedPath!, 'utf-8'));
+  assert.match(JSON.stringify(saved.segments), /arrancamos/, 'renaming later keeps the fix');
+  assert.equal(saved.task, 'transcribe', 'the rest of the response is kept');
 });
 
 function jobInBase(over: Partial<TranscriptionJob> = {}): TranscriptionJob {

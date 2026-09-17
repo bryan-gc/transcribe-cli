@@ -97,8 +97,9 @@ export async function runTranscription(
 
   fs.writeFileSync(job.srtPath, srtContent, Encoding.UTF8);
   fs.writeFileSync(job.textPath, cleanText, Encoding.UTF8);
-  if (result.segments && job.diarizedPath) {
-    fs.writeFileSync(job.diarizedPath, result.raw, Encoding.UTF8);
+  if (segments && job.diarizedPath) {
+    const response = JSON.parse(result.raw) as Record<string, unknown>;
+    fs.writeFileSync(job.diarizedPath, JSON.stringify({ ...response, segments }), Encoding.UTF8);
   }
 
   const meta = buildMeta({
