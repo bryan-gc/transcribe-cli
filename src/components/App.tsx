@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
+import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { Picker } from './Picker.js';
 import { PriorityPicker } from './PriorityPicker.js';
 import { MicTest } from './MicTest.js';
@@ -148,7 +149,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         isBusy={isRecording || isTranscribing}
         fields={[
           languageField(activeLanguage),
-          glossaryField(glossaryLabel),
+          glossaryField(glossarySelectionLabel(activeGlossary, appConfig.useGeneralGlossary)),
           { label: 'Microphone', value: activeMic.label },
           engineField(appConfig.engine, null),
           clipboardField(clipboardEnabled, null, wrapEnabled),

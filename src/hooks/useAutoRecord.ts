@@ -11,7 +11,7 @@ import {
 } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
-import { getTimestampPaths, readGlossaryContent, glossaryNameOf } from '../utils/fileUtils.js';
+import { getTimestampPaths, readSelectedGlossaries, glossaryMetaName } from '../utils/fileUtils.js';
 import { RecordingClock, formatClock } from '../utils/recordingClock.js';
 import { estimateRun, formatEstimatedCost, formatEstimatedTime } from '../utils/estimate.js';
 import { measuredSpeed, readRecentMeta } from '../utils/history.js';
@@ -154,7 +154,11 @@ export function useAutoRecord(
   const transcribe = async () => {
     if (!transcriberRef.current) return;
 
-    const glossaryPrompt = readGlossaryContent(appConfig.basePath, activeGlossary);
+    const glossaryPrompt = readSelectedGlossaries(
+      appConfig.basePath,
+      activeGlossary,
+      appConfig.useGeneralGlossary,
+    );
     setIsTranscribing(true);
     setFailure(null);
     setStatusText(
@@ -168,7 +172,7 @@ export function useAutoRecord(
         textPath: currentTextPath,
         language: activeLanguage,
         glossary: glossaryPrompt,
-        glossaryName: glossaryNameOf(activeGlossary),
+        glossaryName: glossaryMetaName(activeGlossary, appConfig.useGeneralGlossary),
         diarize,
         diarizedPath: currentDiarizedPath,
         metaPath: currentMetaPath,

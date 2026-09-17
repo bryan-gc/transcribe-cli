@@ -1,11 +1,11 @@
 import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
-import path from 'path';
+import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { Header } from './Header.js';
 import { PreflightPrompt } from './PreflightPrompt.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
-import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
+import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
 import {
   clipboardField,
   engineField,
@@ -66,7 +66,7 @@ export function ImportApp({
     { isActive: failure !== null && !isTranscribing },
   );
 
-  const glossaryLabel = glossary ? path.basename(glossary, EXT.GLOSSARY) : '(none)';
+  const glossaryLabel = glossarySelectionLabel(glossary, appConfig.useGeneralGlossary);
 
   return (
     <Box flexDirection="column" padding={1}>

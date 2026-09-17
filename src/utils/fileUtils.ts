@@ -64,6 +64,26 @@ export function selectedGlossaryFiles(topic: string, useGeneral: boolean): strin
   return [...(useGeneral ? [GENERAL_GLOSSARY] : []), ...(topic ? [topic] : [])];
 }
 
+export function readSelectedGlossaries(
+  basePath: string,
+  topic: string,
+  useGeneral: boolean,
+): string | undefined {
+  const parts = selectedGlossaryFiles(topic, useGeneral)
+    .map((file) => readGlossaryContent(basePath, file))
+    .filter((content): content is string => content !== undefined);
+  return parts.length > 0 ? parts.join('\n') : undefined;
+}
+
+export function glossarySelectionLabel(topic: string, useGeneral: boolean): string {
+  const names = selectedGlossaryFiles(topic, useGeneral).map((file) => glossaryNameOf(file)!);
+  return names.length > 0 ? names.join(' + ') : '(none)';
+}
+
+export function glossaryMetaName(topic: string, useGeneral: boolean): string | undefined {
+  return glossaryNameOf(topic) ?? (useGeneral ? glossaryNameOf(GENERAL_GLOSSARY) : undefined);
+}
+
 export function ensureGeneralGlossary(basePath: string): void {
   const file = path.join(getPaths(basePath).GLOSSARIES_DIR, GENERAL_GLOSSARY);
   if (!fs.existsSync(file)) fs.writeFileSync(file, GENERAL_GLOSSARY_HEADER, Encoding.UTF8);

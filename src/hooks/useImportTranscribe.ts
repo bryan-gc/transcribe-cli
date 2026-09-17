@@ -9,7 +9,7 @@ import {
 } from '../utils/runTranscription.js';
 import { prepareImportedAudio, ImportError, type ImportedAudio } from '../audio/audioImport.js';
 import { audioDurationSeconds } from '../audio/audioDuration.js';
-import { glossaryNameOf, readGlossaryContent } from '../utils/fileUtils.js';
+import { glossaryMetaName, readSelectedGlossaries } from '../utils/fileUtils.js';
 import { estimateRun, type EngineChoice, type RunEstimate } from '../utils/estimate.js';
 import { measuredSpeed, readRecentMeta } from '../utils/history.js';
 import { Engine, type AppConfig } from '../config/configManager.js';
@@ -45,7 +45,11 @@ export function useImportTranscribe(
   const transcribe = useCallback(
     async (imported: ImportedAudio) => {
       const choice = choiceRef.current;
-      const glossaryPrompt = readGlossaryContent(appConfig.basePath, glossary);
+      const glossaryPrompt = readSelectedGlossaries(
+        appConfig.basePath,
+        glossary,
+        appConfig.useGeneralGlossary,
+      );
       setIsTranscribing(true);
       setFailure(null);
       setStatusText(
@@ -60,7 +64,7 @@ export function useImportTranscribe(
           textPath: imported.textPath,
           language,
           glossary: glossaryPrompt,
-          glossaryName: glossaryNameOf(glossary),
+          glossaryName: glossaryMetaName(glossary, appConfig.useGeneralGlossary),
           diarize: choice.diarize,
           diarizedPath: imported.diarizedPath,
           metaPath: imported.metaPath,

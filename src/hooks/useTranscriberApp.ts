@@ -13,8 +13,8 @@ import { type AppConfig, ConfigManager } from '../config/configManager.js';
 import {
   getTimestampPaths,
   loadGlossaryFiles,
-  readGlossaryContent,
-  glossaryNameOf,
+  readSelectedGlossaries,
+  glossaryMetaName,
 } from '../utils/fileUtils.js';
 import {
   LanguageCode,
@@ -173,7 +173,11 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
             return;
           }
 
-          const glossaryPrompt = readGlossaryContent(appConfig.basePath, activeGlossary);
+          const glossaryPrompt = readSelectedGlossaries(
+            appConfig.basePath,
+            activeGlossary,
+            appConfig.useGeneralGlossary,
+          );
           setIsTranscribing(true);
           setStatusText(
             `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}) - Initializing...`,
@@ -185,7 +189,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               textPath: currentTextPath,
               language: activeLanguage,
               glossary: glossaryPrompt,
-              glossaryName: glossaryNameOf(activeGlossary),
+              glossaryName: glossaryMetaName(activeGlossary, appConfig.useGeneralGlossary),
               metaPath: currentMetaPath,
               basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,
@@ -224,6 +228,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       recorder,
       exit,
       appConfig.basePath,
+      appConfig.useGeneralGlossary,
       wrapEnabled,
       saveConfig,
     ],

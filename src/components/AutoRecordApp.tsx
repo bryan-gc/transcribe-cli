@@ -1,10 +1,10 @@
 import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
-import path from 'path';
+import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { Header } from './Header.js';
 import { useAutoRecord } from '../hooks/useAutoRecord.js';
 import type { AppConfig } from '../config/configManager.js';
-import { ActionHotkey, EXT, HOTKEY_EXIT } from '../constants.js';
+import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
 import {
   clipboardField,
   engineField,
@@ -62,7 +62,7 @@ export function AutoRecordApp({
     { isActive: (isRecording || failure !== null) && !isTranscribing },
   );
 
-  const glossaryLabel = activeGlossary ? path.basename(activeGlossary, EXT.GLOSSARY) : '(none)';
+  const glossaryLabel = glossarySelectionLabel(activeGlossary, appConfig.useGeneralGlossary);
 
   return (
     <Box flexDirection="column" padding={1}>
