@@ -16,6 +16,7 @@ import {
   resolveOptions,
   type ResolvedOptions,
 } from './config/resolveOptions.js';
+import { runGlossaryCommand } from './glossary/glossaryCommand.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsSetup } from './transcriber/createTranscriber.js';
 import { activeCapabilities, engineBlockers, formatReport, runChecks } from './system/doctor.js';
@@ -28,7 +29,7 @@ const __dirname = path.dirname(__filename);
 const pkgPath = path.join(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-const KNOWN_COMMANDS = ['doctor', 'usage'];
+const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary'];
 
 const program = new Command();
 
@@ -48,8 +49,9 @@ program
   .option('--all', 'With doctor: list every check · with usage: list every run')
   .argument(
     '[command]',
-    'doctor — check the tools this setup needs · usage — what every transcription cost',
+    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show] [name] — list and edit glossaries',
   )
+  .allowExcessArguments()
   .option('--no-copy', 'Do not copy the result to the clipboard')
   .option('--no-wrap', 'Copy the bare text, without the automatic-transcription notice')
   .option('-y, --yes', 'Skip the cost confirmation shown for long audio files')
@@ -77,6 +79,15 @@ if (command === 'usage') {
   const report = formatUsageReport(readUsage(config.basePath), program.opts().all === true);
   process.stdout.write(`${report}\n`);
   process.exit(0);
+}
+if (command === 'glossary') {
+  try {
+    const useGeneral = program.opts().generalGlossary !== false && config.useGeneralGlossary;
+    process.exit(await runGlossaryCommand(config.basePath, program.args.slice(1), useGeneral));
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  }
 }
 const basePathReady = ConfigManager.validateBasePath(config.basePath);
 

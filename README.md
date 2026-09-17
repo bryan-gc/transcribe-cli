@@ -223,6 +223,17 @@ panel says when that happens (`trimmed: kept the last 9 of 25 lines`).
 
 The `.meta.json` of each transcription records which glossary was used, never its content.
 
+There are two kinds: `general.txt`, used on every run, and **topic** glossaries you add with
+`-g <name>`. The topic goes last, so when both do not fit it is the general one that loses lines.
+`-g none` sends no glossary at all; `--no-general-glossary` leaves the general one out.
+
+```bash
+transcribe-cli glossary                 # every glossary, its size, and whether it gets trimmed
+transcribe-cli glossary new devops      # create one and open it in your editor
+transcribe-cli glossary edit [name]     # open it ($VISUAL, $EDITOR, nano or vi); general by default
+transcribe-cli glossary show [name]     # exactly what the engine would receive
+```
+
 ### When a Transcription Fails
 
 The audio is written to disk before anything is sent, so a failure never costs you the recording.
