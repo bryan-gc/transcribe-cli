@@ -245,6 +245,18 @@ transcribe-cli glossary edit [name]     # open it ($VISUAL, $EDITOR, nano or vi)
 transcribe-cli glossary show [name]     # exactly what the engine would receive
 ```
 
+### Long Audio
+
+Recordings and files of any length work. Anything over 22.5 MB is compressed to a 32 kbps mp3
+before upload, and audio longer than ten minutes is sent in pieces cut at a pause, never longer
+than ten minutes each. Every piece gets the end of the previous one as context, a piece that fails
+is retried on its own, and a retry after a failure only sends the pieces that are still missing.
+The subtitles come back as one file with the right times.
+
+With `--speakers`, labels are only consistent inside a piece, so long audio shows them as `1·A`,
+`2·A`… Pick a shorter piece length under **Long audio pieces** in `transcribe-cli -c`. The local
+engine does not split anything: WhisperX already handles long files.
+
 ### When a Transcription Fails
 
 The audio is written to disk before anything is sent, so a failure never costs you the recording.
