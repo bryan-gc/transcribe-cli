@@ -55,6 +55,18 @@ test('the command line carries the audio, model, language and device', () => {
   assert.equal(valueAfter(args, '--output_format'), TranscriptionFormat.SRT);
 });
 
+test('the glossary goes to whisperx as hotwords, and nothing is added without one', () => {
+  const withGlossary = buildArgs(
+    local,
+    { ...options, prompt: 'Kubernetes, Terraform' },
+    '/tmp/out',
+  );
+  assert.equal(valueAfter(withGlossary, '--hotwords'), 'Kubernetes, Terraform');
+  assert.ok(!withGlossary.includes('--initial_prompt'));
+  assert.ok(!withGlossary.includes('--condition_on_previous_text'));
+  assert.ok(!buildArgs(local, options, '/tmp/out').includes('--hotwords'));
+});
+
 test('sentence resolution is always requested', () => {
   assert.equal(
     valueAfter(buildArgs(local, options, '/tmp/out'), '--segment_resolution'),

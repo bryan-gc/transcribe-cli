@@ -40,7 +40,7 @@ export class LocalWhisperTranscriber implements ITranscriber {
         raw: fs.readFileSync(path.join(outputDir, written), Encoding.UTF8),
         engine: Engine.LOCAL,
         model: this.config.model,
-        promptApplied: false,
+        promptApplied: Boolean(options.prompt),
       };
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });
@@ -116,5 +116,6 @@ export function buildArgs(
     outputDir,
     '--print_progress',
     'True',
+    ...(options.prompt ? ['--hotwords', options.prompt] : []),
   ];
 }
