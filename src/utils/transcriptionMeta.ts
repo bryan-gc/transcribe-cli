@@ -21,6 +21,12 @@ export interface GlossaryMeta {
   replacements?: number;
 }
 
+export interface ChunkMeta {
+  count: number;
+  hardCuts: number;
+  retries: number;
+}
+
 export interface TranscriptionMeta {
   at: string;
   source: RecordingKind;
@@ -34,6 +40,7 @@ export interface TranscriptionMeta {
   cost: TranscriptionCost;
   pricingCheckedOn: string;
   glossary?: GlossaryMeta;
+  chunks?: ChunkMeta;
 }
 
 export interface MetaInput {
@@ -47,6 +54,7 @@ export interface MetaInput {
   tookMs: number;
   usage?: TranscriptionUsage;
   glossary?: GlossaryMeta;
+  chunks?: ChunkMeta;
   at?: Date;
 }
 
@@ -89,6 +97,7 @@ export function buildMeta(input: MetaInput): TranscriptionMeta {
     cost: estimateCost(input.model, input.usage, input.audioSeconds),
     pricingCheckedOn: PRICING_CHECKED_ON,
     ...(input.glossary ? { glossary: input.glossary } : {}),
+    ...(input.chunks ? { chunks: input.chunks } : {}),
   };
 }
 

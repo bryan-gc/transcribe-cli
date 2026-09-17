@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { glossarySelectionLabel } from '../utils/fileUtils.js';
+import { chunkMinutesFrom, DEFAULT_CHUNK_MINUTES } from '../audio/chunkPlan.js';
 import { glossaryOptionLabel, readGlossarySummary } from '../glossary/glossaryCommand.js';
 import { Picker } from './Picker.js';
 import { PriorityPicker } from './PriorityPicker.js';
@@ -29,6 +30,8 @@ import {
   type LanguageCode,
 } from '../constants.js';
 
+const CHUNK_MINUTE_CHOICES = [3, 5, 8, 10, 15, 20];
+
 interface MenuEntry {
   id: MenuAction;
   label: string;
@@ -45,6 +48,7 @@ const MAIN_OPTIONS: MenuEntry[] = [
   { id: MenuAction.TOGGLE_GENERAL_GLOSSARY, label: 'General glossary', section: 'Settings' },
   { id: MenuAction.CHANGE_MICROPHONE, label: 'Microphone', section: 'Settings' },
   { id: MenuAction.CHANGE_ENGINE, label: 'Engine', section: 'Settings' },
+  { id: MenuAction.CHANGE_CHUNK_LENGTH, label: 'Long audio pieces', section: 'Settings' },
   { id: MenuAction.TOGGLE_CLIPBOARD, label: 'Clipboard', section: 'Settings' },
   { id: MenuAction.TOGGLE_WRAP, label: 'Copy notice', section: 'Settings' },
   { id: MenuAction.QUIT, label: 'Quit', section: '' },
@@ -130,6 +134,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     [MenuAction.TOGGLE_GENERAL_GLOSSARY]: generalGlossaryEnabled ? 'On' : 'Off',
     [MenuAction.CHANGE_MICROPHONE]: micSummary,
     [MenuAction.CHANGE_ENGINE]: engineField(activeEngine, null).value,
+    [MenuAction.CHANGE_CHUNK_LENGTH]: `up to ${chunkMinutesFrom(appConfig.chunkMaxMinutes)} min`,
     [MenuAction.TOGGLE_CLIPBOARD]: clipboardEnabled ? 'On' : 'Off',
     [MenuAction.TOGGLE_WRAP]: wrapEnabled ? 'On' : 'Off',
   };
@@ -224,6 +229,22 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
       )}
 
       {/* ── Language Picker ── */}
+      {viewMode === ViewMode.CHUNK_LENGTH && (
+        <Picker
+          title="Longest piece sent at once (long audio is cut at a silence before this)"
+          options={CHUNK_MINUTE_CHOICES.map((minutes) => ({
+            label: `${minutes} min${minutes === DEFAULT_CHUNK_MINUTES ? ' (default)' : ''}`,
+            value: String(minutes),
+          }))}
+          onSelect={(value) => {
+            saveConfig({ chunkMaxMinutes: Number(value) });
+            setStatusText(`Long audio pieces: up to ${value} min.`);
+            setViewMode(ViewMode.MAIN);
+          }}
+          onCancel={() => setViewMode(ViewMode.MAIN)}
+        />
+      )}
+
       {viewMode === ViewMode.LANGUAGES && (
         <Picker
           title="Select Language"

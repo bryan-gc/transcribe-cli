@@ -43,6 +43,7 @@ export function PreflightPrompt({
           {row.model.padEnd(modelWidth + 2)}
           {formatEstimatedCost(row.cost).padEnd(costWidth + 3)}
           {formatEstimatedTime(row)}
+          {row.parts > 1 ? `  · in ${row.parts} parts` : ''}
         </Text>
       ))}
       <Box marginTop={1}>

@@ -2,6 +2,7 @@ import { Engine } from '../config/configManager.js';
 import { DIARIZE_MODEL, DIARIZE_TOKENS_PER_AUDIO_MINUTE, WHISPER_MODEL } from '../constants.js';
 import { estimateCost, formatCost, type TranscriptionCost } from './transcriptionMeta.js';
 import { formatDuration } from './runTranscription.js';
+import { limitsFor } from '../audio/chunkPlan.js';
 
 export interface EngineChoice {
   engine: Engine;
@@ -13,6 +14,7 @@ export interface RunEstimate extends EngineChoice {
   cost: TranscriptionCost;
   seconds: number;
   measured: boolean;
+  parts: number;
 }
 
 export type SpeedLookup = (model: string) => number | undefined;
@@ -31,6 +33,7 @@ export function estimateRun(
   choice: EngineChoice,
   localModel: string,
   speedOf: SpeedLookup = () => undefined,
+  chunkMaxMinutes?: number,
 ): RunEstimate {
   const model = choice.engine === Engine.LOCAL ? localModel : apiModelFor(choice.diarize);
   const measuredSpeed = speedOf(model);
@@ -41,6 +44,10 @@ export function estimateRun(
     cost: estimateCostFor(audioSeconds, choice, model),
     seconds: Math.round(audioSeconds * speed),
     measured: measuredSpeed !== undefined,
+    parts:
+      choice.engine === Engine.LOCAL
+        ? 1
+        : Math.max(1, Math.ceil(audioSeconds / limitsFor(model, chunkMaxMinutes).maxSeconds)),
   };
 }
 

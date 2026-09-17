@@ -155,7 +155,9 @@ function buildPreflight(audioSeconds: number, choice: EngineChoice, config: AppC
     { engine: Engine.OPENAI, diarize: true },
     { engine: Engine.LOCAL, diarize: choice.engine === Engine.LOCAL && choice.diarize },
   ];
-  const rows = choices.map((c) => estimateRun(audioSeconds, c, localModel, speedOf));
+  const rows = choices.map((c) =>
+    estimateRun(audioSeconds, c, localModel, speedOf, config.chunkMaxMinutes),
+  );
   const selected = Math.max(
     0,
     rows.findIndex((r) => r.engine === choice.engine && r.diarize === choice.diarize),

@@ -212,7 +212,7 @@ export const PRICING = {
   [DIARIZE_MODEL]: { perInputTokenUsd: 2.5 / 1_000_000, perOutputTokenUsd: 10 / 1_000_000 },
 } as const;
 
-export const DIARIZE_TOKENS_PER_AUDIO_MINUTE = { input: 600, output: 1932 } as const;
+export const DIARIZE_TOKENS_PER_AUDIO_MINUTE = { input: 946, output: 1881 } as const;
 
 export const PREFLIGHT_MIN_SECONDS = 5 * 60;
 
@@ -235,6 +235,7 @@ export enum ViewMode {
   ENGINES = 'ENGINES',
   LANGUAGES = 'LANGUAGES',
   GLOSSARIES = 'GLOSSARIES',
+  CHUNK_LENGTH = 'CHUNK_LENGTH',
   MICROPHONES = 'MICROPHONES',
   MIC_TEST = 'MIC_TEST',
 }
@@ -251,6 +252,7 @@ export enum MenuAction {
   TOGGLE_CLIPBOARD = 'c',
   TOGGLE_WRAP = 'w',
   TOGGLE_GENERAL_GLOSSARY = 'n',
+  CHANGE_CHUNK_LENGTH = 'k',
   QUIT = 'q',
 }
 

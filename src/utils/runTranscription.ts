@@ -100,6 +100,7 @@ export async function runTranscription(
     diarized: result.segments !== undefined,
     tookMs: Date.now() - startedAt,
     usage: result.usage,
+    chunks: result.chunks,
     glossary:
       glossaryPrompt && job.glossaryName
         ? {

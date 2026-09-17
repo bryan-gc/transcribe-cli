@@ -87,3 +87,18 @@ test('the history is read from the archive, newest first, skipping files that ar
   assert.deepEqual(readRecentMeta(path.join(base, 'nowhere')), []);
   fs.rmSync(base, { recursive: true, force: true });
 });
+
+test('the estimate says how many pieces a long audio will be sent in', () => {
+  const api = estimateRun(3600, { engine: Engine.OPENAI, diarize: false }, 'large-v3-turbo');
+  assert.equal(api.parts, 6);
+  const shorter = estimateRun(
+    3600,
+    { engine: Engine.OPENAI, diarize: false },
+    'x',
+    () => undefined,
+    5,
+  );
+  assert.equal(shorter.parts, 12);
+  assert.equal(estimateRun(300, { engine: Engine.OPENAI, diarize: true }, 'x').parts, 1);
+  assert.equal(estimateRun(3600, { engine: Engine.LOCAL, diarize: false }, 'x').parts, 1);
+});

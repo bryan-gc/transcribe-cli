@@ -40,7 +40,9 @@ export function createTranscriber(
 function chunked(config: AppConfig, inner: ITranscriber): ITranscriber {
   return new ChunkedTranscriber(inner, {
     cacheDir: path.join(config.basePath, DIR.CACHE, CHUNKS_CACHE_DIR),
-    chunkMaxMinutes: config.chunkMaxMinutes,
+    get chunkMaxMinutes() {
+      return config.chunkMaxMinutes;
+    },
   });
 }
 

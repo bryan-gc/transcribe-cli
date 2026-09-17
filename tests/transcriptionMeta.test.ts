@@ -90,3 +90,18 @@ test('the meta names the glossary that was used, never its content', () => {
   assert.deepEqual(buildMeta({ ...base, glossary }).glossary, glossary);
   assert.equal('glossary' in buildMeta(base), false);
 });
+
+test('the meta keeps how a long audio was split', () => {
+  const chunks = { count: 3, hardCuts: 0, retries: 1 };
+  const meta = buildMeta({
+    source: RecordingKind.IMPORTED,
+    audioFile: 'long.mp3',
+    engine: 'openai',
+    model: WHISPER_MODEL,
+    language: LanguageCode.SPANISH,
+    diarized: false,
+    tookMs: 1,
+    chunks,
+  });
+  assert.deepEqual(meta.chunks, chunks);
+});

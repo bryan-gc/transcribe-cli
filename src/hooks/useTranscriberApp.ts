@@ -137,6 +137,10 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
           setViewMode(ViewMode.ENGINES);
           break;
 
+        case MenuAction.CHANGE_CHUNK_LENGTH:
+          setViewMode(ViewMode.CHUNK_LENGTH);
+          break;
+
         case MenuAction.CHANGE_GLOSSARY:
           setGlossaryFiles(loadGlossaryFiles(appConfig.basePath));
           setViewMode(ViewMode.GLOSSARIES);
