@@ -30,6 +30,7 @@ export interface AppConfig {
   autoCopy: boolean;
   wrapClipboard: boolean;
   useGeneralGlossary: boolean;
+  chunkMaxMinutes: number;
   engine: Engine;
   localWhisper: LocalWhisperConfig;
   binPaths: BinPaths;
@@ -53,6 +54,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   autoCopy: false,
   wrapClipboard: true,
   useGeneralGlossary: true,
+  chunkMaxMinutes: 10,
   engine: Engine.OPENAI,
   localWhisper: {
     binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),
