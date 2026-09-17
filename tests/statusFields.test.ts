@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   clipboardField,
   engineField,
+  glossaryField,
   languageField,
   tookField,
 } from '../src/components/statusFields.js';
@@ -69,4 +70,21 @@ test('durations read as a person would say them', () => {
 
 test('the language field spells the language out', () => {
   assert.equal(languageField(LanguageCode.SPANISH).value, 'Spanish');
+});
+
+test('the glossary field says when the glossary was trimmed or not used', () => {
+  const prompt = { text: 'b\nc', estimatedTokens: 2, trimmed: true, droppedLines: 3 };
+  const trimmed = glossaryField('demo', run({ glossaryPrompt: prompt, glossaryApplied: true }));
+  assert.equal(trimmed.value, 'demo (trimmed: kept the last 2 of 5 lines)');
+  assert.equal(trimmed.tone, 'warn');
+
+  const unused = glossaryField('demo', run({ glossaryPrompt: prompt, glossaryApplied: false }));
+  assert.equal(unused.value, 'demo (not used by this model)');
+
+  const whole = { ...prompt, trimmed: false, droppedLines: 0 };
+  assert.equal(
+    glossaryField('demo', run({ glossaryPrompt: whole, glossaryApplied: true })).value,
+    'demo',
+  );
+  assert.equal(glossaryField('(none)', null).value, '(none)');
 });

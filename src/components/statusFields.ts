@@ -14,7 +14,21 @@ export function languageField(language: LanguageCode): StatusField {
   return { label: 'Language', value: LANGUAGE_NAMES[language] };
 }
 
-export function glossaryField(label: string): StatusField {
+export function glossaryField(label: string, run: TranscriptionOutcome | null = null): StatusField {
+  const prompt = run?.glossaryPrompt;
+  if (!prompt) return { label: 'Glossary', value: label };
+  if (!run.glossaryApplied) {
+    return { label: 'Glossary', value: `${label} (not used by this model)`, tone: 'dim' };
+  }
+  if (prompt.trimmed) {
+    const kept = prompt.text.split('\n').length;
+    const total = kept + prompt.droppedLines;
+    return {
+      label: 'Glossary',
+      value: `${label} (trimmed: kept the last ${kept} of ${total} lines)`,
+      tone: 'warn',
+    };
+  }
   return { label: 'Glossary', value: label };
 }
 

@@ -75,3 +75,18 @@ test('small amounts keep enough digits to mean something', () => {
   assert.equal(formatCost({ usd: 2.5, estimated: true }), '$2.50 (est.)');
   assert.equal(formatCost({ usd: 0, estimated: false }), 'free');
 });
+
+test('the meta names the glossary that was used, never its content', () => {
+  const base = {
+    source: RecordingKind.RECORDED,
+    audioFile: 'a.wav',
+    engine: 'openai',
+    model: WHISPER_MODEL,
+    language: LanguageCode.SPANISH,
+    diarized: false,
+    tookMs: 1,
+  };
+  const glossary = { name: 'demo', applied: true, trimmed: true, estimatedTokens: 219 };
+  assert.deepEqual(buildMeta({ ...base, glossary }).glossary, glossary);
+  assert.equal('glossary' in buildMeta(base), false);
+});

@@ -145,3 +145,14 @@ test('the status distinguishes copied from merely enabled', () => {
     /clipboard/i,
   );
 });
+
+test('the meta records which glossary was used and whether it was trimmed', async () => {
+  const j = job({ glossary: 'Grafana', glossaryName: 'demo' });
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+  assert.deepEqual(outcome.meta.glossary, {
+    name: 'demo',
+    applied: true,
+    trimmed: false,
+    estimatedTokens: 3,
+  });
+});

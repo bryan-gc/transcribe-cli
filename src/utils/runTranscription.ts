@@ -17,6 +17,7 @@ export interface TranscriptionJob {
   textPath: string;
   language: LanguageCode;
   glossary?: string;
+  glossaryName?: string;
   diarize?: boolean;
   diarizedPath?: string;
   metaPath?: string;
@@ -87,6 +88,15 @@ export async function runTranscription(
     diarized: result.segments !== undefined,
     tookMs: Date.now() - startedAt,
     usage: result.usage,
+    glossary:
+      glossaryPrompt && job.glossaryName
+        ? {
+            name: job.glossaryName,
+            applied: result.promptApplied,
+            trimmed: glossaryPrompt.trimmed,
+            estimatedTokens: glossaryPrompt.estimatedTokens,
+          }
+        : undefined,
   });
   if (job.metaPath) fs.writeFileSync(job.metaPath, JSON.stringify(meta, null, 2), Encoding.UTF8);
   if (job.basePath) appendUsage(job.basePath, meta);

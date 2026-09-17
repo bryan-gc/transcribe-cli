@@ -10,7 +10,12 @@ import {
 } from '../utils/runTranscription.js';
 import type { Engine } from '../config/configManager.js';
 import { type AppConfig, ConfigManager } from '../config/configManager.js';
-import { getTimestampPaths, loadGlossaryFiles, readGlossaryContent } from '../utils/fileUtils.js';
+import {
+  getTimestampPaths,
+  loadGlossaryFiles,
+  readGlossaryContent,
+  glossaryNameOf,
+} from '../utils/fileUtils.js';
 import {
   LanguageCode,
   LANGUAGE_NAMES,
@@ -171,6 +176,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               textPath: currentTextPath,
               language: activeLanguage,
               glossary: glossaryPrompt,
+              glossaryName: glossaryNameOf(activeGlossary),
               metaPath: currentMetaPath,
               basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,

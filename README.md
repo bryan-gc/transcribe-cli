@@ -187,6 +187,23 @@ Recordings are never deleted: the audio stays next to its transcript, grouped by
 versions kept everything in a `tmp/` folder; if you have one, the first run after updating moves it
 into `transcriptions/recorded/` on its own, without touching a file it would have to overwrite.
 
+### Glossaries
+
+A glossary is a plain `.txt` in `glossaries/`: one term, name or short phrase per line, or a
+comma-separated list. Lines starting with `#` are ignored.
+
+Only about 220 tokens of it are sent — that is what the engines keep. When a glossary is longer,
+its **top** lines are dropped first, so keep the most important terms at the bottom. The status
+panel says when that happens (`trimmed: kept the last 9 of 25 lines`).
+
+| Engine | How the glossary is used |
+|---|---|
+| OpenAI API | Sent as the transcription prompt |
+| Local (WhisperX) | Sent as `--hotwords` |
+| `--speakers` | Not used: the speaker-labelling model does not accept a prompt |
+
+The `.meta.json` of each transcription records which glossary was used, never its content.
+
 ### When a Transcription Fails
 
 The audio is written to disk before anything is sent, so a failure never costs you the recording.

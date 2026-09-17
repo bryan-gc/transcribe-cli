@@ -55,6 +55,10 @@ export function loadGlossaryFiles(basePath: string): string[] {
 /**
  * Reads the content of a specific glossary file.
  */
+export function glossaryNameOf(filename: string): string | undefined {
+  return filename ? path.basename(filename, EXT.GLOSSARY) : undefined;
+}
+
 export function readGlossaryContent(basePath: string, filename: string): string | undefined {
   if (!filename) return undefined;
   const filepath = path.join(getPaths(basePath).GLOSSARIES_DIR, filename);

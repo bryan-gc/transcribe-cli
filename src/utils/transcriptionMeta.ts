@@ -13,6 +13,13 @@ export interface TranscriptionCost {
   estimated: boolean;
 }
 
+export interface GlossaryMeta {
+  name: string;
+  applied: boolean;
+  trimmed: boolean;
+  estimatedTokens: number;
+}
+
 export interface TranscriptionMeta {
   at: string;
   source: RecordingKind;
@@ -25,6 +32,7 @@ export interface TranscriptionMeta {
   usage?: TranscriptionUsage;
   cost: TranscriptionCost;
   pricingCheckedOn: string;
+  glossary?: GlossaryMeta;
 }
 
 export interface MetaInput {
@@ -37,6 +45,7 @@ export interface MetaInput {
   diarized: boolean;
   tookMs: number;
   usage?: TranscriptionUsage;
+  glossary?: GlossaryMeta;
   at?: Date;
 }
 
@@ -78,6 +87,7 @@ export function buildMeta(input: MetaInput): TranscriptionMeta {
     usage: input.usage,
     cost: estimateCost(input.model, input.usage, input.audioSeconds),
     pricingCheckedOn: PRICING_CHECKED_ON,
+    ...(input.glossary ? { glossary: input.glossary } : {}),
   };
 }
 

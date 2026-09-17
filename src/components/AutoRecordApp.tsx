@@ -72,7 +72,7 @@ export function AutoRecordApp({
         isBusy={(isRecording && !isPaused) || isTranscribing}
         fields={[
           languageField(activeLanguage),
-          glossaryField(glossaryLabel),
+          glossaryField(glossaryLabel, lastRun),
           { label: 'Microphone', value: activeMic.label },
           engineField(appConfig.engine, lastRun),
           ...audioLengthField(lastRun),

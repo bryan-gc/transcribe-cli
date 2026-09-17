@@ -76,7 +76,7 @@ export function ImportApp({
         isBusy={isTranscribing}
         fields={[
           languageField(language),
-          glossaryField(glossaryLabel),
+          glossaryField(glossaryLabel, lastRun),
           { label: 'Audio file', value: sourceName },
           engineField(engine, lastRun),
           ...audioLengthField(lastRun),

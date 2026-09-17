@@ -5,7 +5,7 @@ import Spinner from 'ink-spinner';
 export interface StatusField {
   label: string;
   value: string;
-  tone?: 'value' | 'good' | 'bad' | 'dim';
+  tone?: 'value' | 'good' | 'warn' | 'bad' | 'dim';
 }
 
 interface HeaderProps {
@@ -18,6 +18,7 @@ interface HeaderProps {
 const COLORS: Record<NonNullable<StatusField['tone']>, string | undefined> = {
   value: 'magenta',
   good: 'green',
+  warn: 'yellow',
   bad: 'red',
   dim: undefined,
 };
