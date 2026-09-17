@@ -13,6 +13,8 @@ import {
 } from '../src/transcriber/createTranscriber.js';
 import { WhisperTranscriber } from '../src/transcriber/WhisperTranscriber.js';
 import { MockTranscriber } from '../src/transcriber/MockTranscriber.js';
+import { ChunkedTranscriber } from '../src/transcriber/ChunkedTranscriber.js';
+import type { ITranscriber } from '../src/transcriber/ITranscriber.js';
 import {
   DEFAULT_CONFIG,
   Engine,
@@ -20,6 +22,8 @@ import {
   type LocalWhisperConfig,
 } from '../src/config/configManager.js';
 import { LanguageCode, TranscriptionFormat } from '../src/constants.js';
+
+const unwrap = (t: ITranscriber) => (t instanceof ChunkedTranscriber ? t.inner : t);
 
 const config = (over: Partial<AppConfig> = {}): AppConfig => ({
   ...DEFAULT_CONFIG,
@@ -110,7 +114,9 @@ test('a missing whisperx says how to install it rather than failing to spawn', a
 });
 
 test('the engine in the configuration decides which transcriber is built', () => {
-  assert.ok(createTranscriber(config({ engine: Engine.OPENAI }), {}) instanceof WhisperTranscriber);
+  assert.ok(
+    unwrap(createTranscriber(config({ engine: Engine.OPENAI }), {})) instanceof WhisperTranscriber,
+  );
   assert.ok(
     createTranscriber(config({ engine: Engine.LOCAL }), {}) instanceof LocalWhisperTranscriber,
   );
@@ -118,13 +124,15 @@ test('the engine in the configuration decides which transcriber is built', () =>
 
 test('the mock switch wins over the configured engine', () => {
   const env = { [MOCK_ENV_KEY]: '1' };
-  assert.ok(createTranscriber(config({ engine: Engine.LOCAL }), env) instanceof MockTranscriber);
+  assert.ok(
+    unwrap(createTranscriber(config({ engine: Engine.LOCAL }), env)) instanceof MockTranscriber,
+  );
 });
 
 test('an empty or zero mock switch is off', () => {
   for (const raw of ['', '0', 'false']) {
     assert.ok(
-      createTranscriber(config(), { [MOCK_ENV_KEY]: raw }) instanceof WhisperTranscriber,
+      unwrap(createTranscriber(config(), { [MOCK_ENV_KEY]: raw })) instanceof WhisperTranscriber,
       `${raw} should not enable the mock`,
     );
   }

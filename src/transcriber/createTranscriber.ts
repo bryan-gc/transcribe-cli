@@ -1,4 +1,7 @@
 import fs from 'fs';
+import path from 'path';
+import { ChunkedTranscriber } from './ChunkedTranscriber.js';
+import { DIR } from '../constants.js';
 import type { ITranscriber } from './ITranscriber.js';
 import { WhisperTranscriber } from './WhisperTranscriber.js';
 import { LocalWhisperTranscriber } from './LocalWhisperTranscriber.js';
@@ -8,6 +11,8 @@ import { Engine, type AppConfig } from '../config/configManager.js';
 export const MOCK_ENV_KEY = 'TRANSCRIBE_MOCK';
 export const MOCK_FIXTURE_ENV_KEY = 'TRANSCRIBE_MOCK_FIXTURE';
 
+const CHUNKS_CACHE_DIR = 'chunks';
+
 const CANNED_SRT = '1\n00:00:00,000 --> 00:00:02,000\nMock transcription.\n';
 
 export function createTranscriber(
@@ -16,8 +21,11 @@ export function createTranscriber(
 ): ITranscriber {
   if (isMockMode(env)) {
     const fixture = env[MOCK_FIXTURE_ENV_KEY];
-    return new MockTranscriber(
-      fixture && fs.existsSync(fixture) ? fs.readFileSync(fixture, 'utf-8') : CANNED_SRT,
+    return chunked(
+      config,
+      new MockTranscriber(
+        fixture && fs.existsSync(fixture) ? fs.readFileSync(fixture, 'utf-8') : CANNED_SRT,
+      ),
     );
   }
 
@@ -26,7 +34,14 @@ export function createTranscriber(
   if (!config.apiKey) {
     throw new Error('No API key configured. Run transcribe-cli -c, or use --local.');
   }
-  return new WhisperTranscriber(config.apiKey);
+  return chunked(config, new WhisperTranscriber(config.apiKey));
+}
+
+function chunked(config: AppConfig, inner: ITranscriber): ITranscriber {
+  return new ChunkedTranscriber(inner, {
+    cacheDir: path.join(config.basePath, DIR.CACHE, CHUNKS_CACHE_DIR),
+    chunkMaxMinutes: config.chunkMaxMinutes,
+  });
 }
 
 function isMockMode(env: NodeJS.ProcessEnv): boolean {

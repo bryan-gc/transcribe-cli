@@ -29,6 +29,7 @@ export interface TranscriptionResult {
   model: string;
   usage?: TranscriptionUsage;
   promptApplied: boolean;
+  chunks?: { count: number; hardCuts: number; retries: number };
 }
 
 export interface ITranscriber {
