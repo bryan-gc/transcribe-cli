@@ -40,7 +40,8 @@ program
   .addOption(new Option('-m, --manual').hideHelp())
   .option('-f, --file <path>', 'Transcribe an existing audio file instead of recording')
   .option('-l, --language <code>', `Language of the audio (${AVAILABLE_LANGUAGES.join(', ')})`)
-  .option('-g, --glossary <name>', 'Glossary to use as context for this run')
+  .option('-g, --glossary <name>', 'Topic glossary to add to the general one (none: no glossary)')
+  .option('--no-general-glossary', 'Leave the general glossary out of this run')
   .option('-s, --speakers', 'Detect and label who is speaking')
   .option('--local', 'Use the local WhisperX engine instead of the API')
   .option('--engine <name>', 'openai | local')
@@ -131,6 +132,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     selectedLanguage: options.language,
     autoCopy: options.copyToClipboard,
     wrapClipboard: options.wrapClipboard,
+    useGeneralGlossary: options.useGeneralGlossary,
     engine: options.engine,
   };
 

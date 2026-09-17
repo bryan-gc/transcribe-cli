@@ -1,6 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { DIR, EXT, Encoding, RecordingKind, getPaths } from '../constants.js';
+import {
+  DIR,
+  EXT,
+  Encoding,
+  GENERAL_GLOSSARY,
+  GENERAL_GLOSSARY_HEADER,
+  RecordingKind,
+  getPaths,
+} from '../constants.js';
 
 export interface TimestampPathOptions {
   now?: Date;
@@ -48,29 +56,29 @@ export function loadGlossaryFiles(basePath: string): string[] {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return fs
     .readdirSync(dir)
-    .filter((f) => f.endsWith(EXT.GLOSSARY))
+    .filter((f) => f.endsWith(EXT.GLOSSARY) && f !== GENERAL_GLOSSARY)
     .sort();
+}
+
+export function selectedGlossaryFiles(topic: string, useGeneral: boolean): string[] {
+  return [...(useGeneral ? [GENERAL_GLOSSARY] : []), ...(topic ? [topic] : [])];
+}
+
+export function ensureGeneralGlossary(basePath: string): void {
+  const file = path.join(getPaths(basePath).GLOSSARIES_DIR, GENERAL_GLOSSARY);
+  if (!fs.existsSync(file)) fs.writeFileSync(file, GENERAL_GLOSSARY_HEADER, Encoding.UTF8);
+}
+
+export function glossaryNameOf(filename: string): string | undefined {
+  return filename ? path.basename(filename, EXT.GLOSSARY) : undefined;
 }
 
 /**
  * Reads the content of a specific glossary file.
  */
-export function glossaryNameOf(filename: string): string | undefined {
-  return filename ? path.basename(filename, EXT.GLOSSARY) : undefined;
-}
-
 export function readGlossaryContent(basePath: string, filename: string): string | undefined {
   if (!filename) return undefined;
   const filepath = path.join(getPaths(basePath).GLOSSARIES_DIR, filename);
   const content = fs.existsSync(filepath) ? fs.readFileSync(filepath, Encoding.UTF8).trim() : '';
   return content || undefined;
-}
-
-/**
- * Ensures at least one glossary is selected if available.
- * Useful for automatic modes where a default might be needed.
- */
-export function getInitialGlossary(basePath: string): string {
-  const files = loadGlossaryFiles(basePath);
-  return files[0] ?? '';
 }

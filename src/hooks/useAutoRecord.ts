@@ -11,12 +11,7 @@ import {
 } from '../utils/runTranscription.js';
 import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
-import {
-  getTimestampPaths,
-  readGlossaryContent,
-  glossaryNameOf,
-  getInitialGlossary,
-} from '../utils/fileUtils.js';
+import { getTimestampPaths, readGlossaryContent, glossaryNameOf } from '../utils/fileUtils.js';
 import { RecordingClock, formatClock } from '../utils/recordingClock.js';
 import { estimateRun, formatEstimatedCost, formatEstimatedTime } from '../utils/estimate.js';
 import { measuredSpeed, readRecentMeta } from '../utils/history.js';
@@ -62,7 +57,7 @@ export function useAutoRecord(
     appConfig.microphonePriority,
   );
 
-  const activeGlossary = glossary || getInitialGlossary(appConfig.basePath);
+  const activeGlossary = glossary;
 
   useEffect(() => {
     const recorder = new AudioRecorder();

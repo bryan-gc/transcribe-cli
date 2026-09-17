@@ -50,7 +50,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   );
 
   const initialGlossaries = loadGlossaryFiles(appConfig.basePath);
-  const [activeGlossary, setActiveGlossary] = useState(initialGlossaries[0] ?? '');
+  const [activeGlossary, setActiveGlossary] = useState('');
 
   const initialMics = listMicDevices();
   const initialMic = resolveMicDevice(appConfig.microphonePriority, initialMics).device;

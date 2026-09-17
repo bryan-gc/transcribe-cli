@@ -25,6 +25,20 @@ export const SUPPORTED_IMPORT_EXT = new Set([
   '.ogg',
 ]);
 
+export const GENERAL_GLOSSARY = 'general.txt' as const;
+
+export const GLOSSARY_NONE = 'none' as const;
+
+export const GENERAL_GLOSSARY_HEADER = [
+  '# Glossary: general',
+  '# Used on every run unless you pass -g none or --no-general-glossary.',
+  '# One term, name or short phrase per line, or a comma-separated list.',
+  '# Lines starting with # are ignored.',
+  '# Only about 220 tokens are sent: when it is longer, the TOP lines are dropped first,',
+  '# so keep the most important terms at the bottom.',
+  '',
+].join('\n');
+
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 /** File extensions the app reads or writes. */

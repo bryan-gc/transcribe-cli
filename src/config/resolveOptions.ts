@@ -1,4 +1,4 @@
-import { AVAILABLE_LANGUAGES, EXT, LanguageCode } from '../constants.js';
+import { AVAILABLE_LANGUAGES, EXT, GLOSSARY_NONE, LanguageCode } from '../constants.js';
 import { Engine, type AppConfig } from './configManager.js';
 
 export interface CliFlags {
@@ -12,6 +12,7 @@ export interface CliFlags {
   glossary?: string;
   copy?: boolean;
   wrap?: boolean;
+  generalGlossary?: boolean;
   yes?: boolean;
 }
 
@@ -22,6 +23,7 @@ export interface ResolvedOptions {
   engine: Engine;
   language: LanguageCode;
   glossary: string;
+  useGeneralGlossary: boolean;
   copyToClipboard: boolean;
   wrapClipboard: boolean;
   confirmLongAudio: boolean;
@@ -63,6 +65,9 @@ export function resolveOptions(
     engine: resolveEngine(flags, env, config),
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
+    useGeneralGlossary:
+      !isNoGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY]) &&
+      firstDefined(flags.generalGlossary, config.useGeneralGlossary, true),
     copyToClipboard: firstDefined(
       flags.copy,
       parseBool(env[ENV_KEYS.COPY]),
@@ -106,8 +111,12 @@ function resolveLanguage(raw: string | undefined, config: AppConfig): LanguageCo
   return value;
 }
 
+function isNoGlossary(raw: string | undefined): boolean {
+  return raw?.trim().toLowerCase() === GLOSSARY_NONE;
+}
+
 function resolveGlossary(raw: string | undefined, available: string[]): string {
-  if (raw === undefined || raw.trim() === '') return '';
+  if (raw === undefined || raw.trim() === '' || isNoGlossary(raw)) return '';
 
   const wanted = raw.trim();
   const withExt = wanted.endsWith(EXT.GLOSSARY) ? wanted : `${wanted}${EXT.GLOSSARY}`;

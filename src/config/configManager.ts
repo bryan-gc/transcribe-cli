@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { DIR, EXT, LanguageCode, LEGACY_DATA_DIR, RecordingKind } from '../constants.js';
+import { ensureGeneralGlossary } from '../utils/fileUtils.js';
 
 export enum Engine {
   OPENAI = 'openai',
@@ -28,6 +29,7 @@ export interface AppConfig {
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
   wrapClipboard: boolean;
+  useGeneralGlossary: boolean;
   engine: Engine;
   localWhisper: LocalWhisperConfig;
   binPaths: BinPaths;
@@ -50,6 +52,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
   wrapClipboard: true,
+  useGeneralGlossary: true,
   engine: Engine.OPENAI,
   localWhisper: {
     binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),
@@ -136,6 +139,7 @@ export class ConfigManager {
     for (const dir of dirs) {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     }
+    ensureGeneralGlossary(basePath);
   }
 
   static migrateLegacyLayout(basePath: string): void {

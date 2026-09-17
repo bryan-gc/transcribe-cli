@@ -167,3 +167,18 @@ test('the transcription notice is on by default and --no-wrap or the env turn it
     true,
   );
 });
+
+test('the general glossary is on unless the flag, the config or -g none turn it off', () => {
+  assert.equal(resolveOptions({}, config(), {}, GLOSSARIES).useGeneralGlossary, true);
+  assert.equal(
+    resolveOptions({ generalGlossary: false }, config(), {}, GLOSSARIES).useGeneralGlossary,
+    false,
+  );
+  assert.equal(
+    resolveOptions({}, config({ useGeneralGlossary: false }), {}, GLOSSARIES).useGeneralGlossary,
+    false,
+  );
+  const none = resolveOptions({ glossary: 'none' }, config(), {}, GLOSSARIES);
+  assert.equal(none.glossary, '');
+  assert.equal(none.useGeneralGlossary, false);
+});
