@@ -278,6 +278,23 @@ With `--speakers`, labels are only consistent inside a piece, so long audio show
 `2·A`… Pick a shorter piece length under **Long audio pieces** in `transcribe-cli -c`. The local
 engine does not split anything: WhisperX already handles long files.
 
+### Naming the Speakers
+
+`--speakers` labels voices `A`, `B`… With `--name-speakers` on an imported file, a screen lists
+each voice once the transcript is ready, with how long it talks and a sample line; `p` plays a
+short clip of that voice, `enter` gives it a name, and giving two labels the same name merges them.
+
+In long audio, clean clips of the four voices that talk most in the first piece are sent with
+every later piece, so those voices keep one label throughout. Anyone the model does not match
+gets the number of the piece they appear in (`3·A`), ready to be named or merged.
+
+Names can be changed later without calling the API again:
+
+```bash
+transcribe-cli speakers path/to/transcript.txt              # list the voices, or name them interactively
+transcribe-cli speakers path/to/transcript.txt A=Ana B=Luis # rename directly
+```
+
 ### When a Transcription Fails
 
 The audio is written to disk before anything is sent, so a failure never costs you the recording.
@@ -298,6 +315,8 @@ If the engine you picked is not usable at all — no API key, or WhisperX not in
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
 | `--no-wrap` | Copy the bare text, without the automatic-transcription notice |
+| `--name-speakers` | With `-f`: label speakers, then name each voice after listening to it |
+| `--no-general-glossary` | Leave the general glossary out of this run |
 | `--no-copy` | Do not copy the result to the clipboard on this run |
 | `-y, --yes` | Skip the cost confirmation shown for long audio files (`TRANSCRIBE_YES=1` does the same) |
 | `-v, --version` | Output the current version |

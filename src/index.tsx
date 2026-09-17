@@ -21,19 +21,27 @@ import { openInEditor } from './system/editor.js';
 import type { Candidate } from './glossary/extractTerms.js';
 import type { ReviewDecision } from './glossary/applyReview.js';
 import { runGlossaryCommand } from './glossary/glossaryCommand.js';
+import { runSpeakersCommand } from './speakers/speakersCommand.js';
+import { SpeakerNaming } from './components/SpeakerNaming.js';
+import { cutSpeakerClips, type SpeakerSummary } from './speakers/speakerSummary.js';
+import type { SpeakerNames } from './speakers/renameSpeakers.js';
+import type { DiarizedSegment } from './transcriber/ITranscriber.js';
+import { resolveBinary } from './system/dependencies.js';
+import { convertAudio } from './audio/compress.js';
+import { playAudio, stopPlayback } from './audio/audioPlayer.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsSetup } from './transcriber/createTranscriber.js';
 import { activeCapabilities, engineBlockers, formatReport, runChecks } from './system/doctor.js';
 import { engineLabel } from './components/statusFields.js';
 import { formatUsageReport, readUsage } from './utils/usageLog.js';
-import { AVAILABLE_LANGUAGES } from './constants.js';
+import { AVAILABLE_LANGUAGES, Cmd, DIR } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pkgPath = path.join(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary'];
+const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary', 'speakers'];
 
 const program = new Command();
 
@@ -54,7 +62,7 @@ program
   .option('--all', 'With doctor: list every check · with usage: list every run')
   .argument(
     '[command]',
-    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show] [name] — list and edit glossaries',
+    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show|suggest|review] [name] — list and edit glossaries · speakers <file> [A=Name] — name the voices of a transcript',
   )
   .allowExcessArguments()
   .option('--no-copy', 'Do not copy the result to the clipboard')
@@ -100,6 +108,54 @@ if (command === 'glossary') {
     process.exit(1);
   }
 }
+if (command === 'speakers') {
+  try {
+    process.exit(
+      await runSpeakersCommand(program.args.slice(1), {
+        write: (text) => process.stdout.write(text),
+        name: process.stdout.isTTY
+          ? (speakers, segments, audio) => nameInTerminal(config, speakers, segments, audio)
+          : undefined,
+      }),
+    );
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  }
+}
+
+async function nameInTerminal(
+  appConfig: AppConfig,
+  speakers: SpeakerSummary[],
+  segments: DiarizedSegment[],
+  audioPath: string | undefined,
+): Promise<SpeakerNames | undefined> {
+  const ffmpeg = resolveBinary(Cmd.FFMPEG);
+  const dir = path.join(appConfig.basePath, DIR.CACHE, 'voices');
+  fs.mkdirSync(dir, { recursive: true });
+  const clips =
+    audioPath && ffmpeg && speakers.length > 0
+      ? cutSpeakerClips(audioPath, segments, dir, (source, target, from, to) =>
+          convertAudio(ffmpeg, source, target, false, { from, to }),
+        )
+      : {};
+  let result: SpeakerNames | undefined;
+  const app = render(
+    <SpeakerNaming
+      speakers={speakers}
+      clips={clips}
+      onPlay={(clip) => void playAudio(clip).catch(() => undefined)}
+      onDone={(names) => {
+        stopPlayback();
+        result = names;
+        app.unmount();
+      }}
+    />,
+  );
+  await app.waitUntilExit();
+  return result;
+}
+
 async function reviewInTerminal(
   name: string,
   candidates: Candidate[],
