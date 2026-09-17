@@ -1,17 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { spawnSync } from 'child_process';
+import { convertAudio } from './compress.js';
 import { getTimestampPaths } from '../utils/fileUtils.js';
 import { DEPENDENCIES, missingMessage, resolveBinary } from '../system/dependencies.js';
-import {
-  Cmd,
-  Encoding,
-  EXT,
-  MAX_UPLOAD_BYTES,
-  RecordingKind,
-  SUPPORTED_IMPORT_EXT,
-  AUDIO_CONFIG,
-} from '../constants.js';
+import { Cmd, EXT, MAX_UPLOAD_BYTES, RecordingKind, SUPPORTED_IMPORT_EXT } from '../constants.js';
 
 export class ImportError extends Error {}
 
@@ -64,30 +56,10 @@ export function prepareImportedAudio(
     throw new ImportError(`${reason}\n${missingMessage(FFMPEG)}`);
   }
 
-  convert(ffmpeg, sourcePath, paths.audioPath, tooLarge);
-  return { ...paths, converted: true };
-}
-
-function convert(ffmpeg: string, source: string, target: string, compress: boolean): void {
-  const args = [
-    '-y',
-    '-loglevel',
-    'error',
-    '-i',
-    source,
-    '-vn',
-    '-ar',
-    AUDIO_CONFIG.SAMPLE_RATE,
-    '-ac',
-    AUDIO_CONFIG.CHANNELS,
-    ...(compress ? ['-b:a', '32k'] : []),
-    target,
-  ];
-
-  const result = spawnSync(ffmpeg, args, { encoding: Encoding.UTF8 });
-  if (result.status !== 0) {
-    if (fs.existsSync(target)) fs.rmSync(target);
-    const detail = (result.stderr || '').trim().split('\n').pop() ?? 'unknown error';
-    throw new ImportError(`Could not convert ${path.basename(source)}: ${detail}`);
+  try {
+    convertAudio(ffmpeg, sourcePath, paths.audioPath, tooLarge);
+  } catch (error) {
+    throw new ImportError(error instanceof Error ? error.message : String(error));
   }
+  return { ...paths, converted: true };
 }

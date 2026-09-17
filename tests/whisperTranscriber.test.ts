@@ -101,3 +101,44 @@ test('a missing audio file fails before anything is sent', async () => {
   );
   assert.equal(seen.length, 0);
 });
+
+test('audio over the upload limit is compressed first and the temporary copy is removed', async () => {
+  const { impl, seen } = stubFetch('text');
+  const big = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'wt-')), 'long.wav');
+  fs.writeFileSync(big, Buffer.alloc(24 * 1024 * 1024));
+  const compressedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-small-'));
+  const compressed = path.join(compressedDir, 'long.mp3');
+  const progress: string[] = [];
+
+  await new WhisperTranscriber('sk-test', impl, (source) => {
+    assert.equal(source, big);
+    fs.writeFileSync(compressed, Buffer.alloc(64));
+    return compressed;
+  }).transcribe({
+    audioFilePath: big,
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.SRT,
+    onProgress: (status) => progress.push(status),
+  });
+
+  const sent = seen[0]!.form?.get('file') as File;
+  assert.equal(sent.name, 'long.mp3');
+  assert.equal(sent.size, 64);
+  assert.ok(progress.some((p) => /Compressing/.test(p)));
+  assert.equal(fs.existsSync(compressedDir), false, 'the compressed copy is cleaned up');
+  assert.ok(fs.existsSync(big), 'the original recording stays');
+});
+
+test('audio under the limit is sent as it is, without compressing', async () => {
+  const { impl } = stubFetch('text');
+  let compressed = false;
+  await new WhisperTranscriber('sk-test', impl, () => {
+    compressed = true;
+    return '';
+  }).transcribe({
+    audioFilePath: tempAudio(),
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.SRT,
+  });
+  assert.equal(compressed, false);
+});

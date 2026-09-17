@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import OpenAI from 'openai';
 import type {
   ITranscriber,
@@ -8,6 +9,8 @@ import type {
 } from './ITranscriber.js';
 import { Engine } from '../config/configManager.js';
 import { parseDiarized } from '../utils/diarizedParser.js';
+import { compressForUpload, type Compressor } from '../audio/compress.js';
+import { limitsFor, needsCompression } from '../audio/chunkPlan.js';
 import {
   DIARIZE_CHUNKING,
   DIARIZE_MODEL,
@@ -32,7 +35,11 @@ function readUsage(response: unknown): TranscriptionUsage | undefined {
 export class WhisperTranscriber implements ITranscriber {
   private openai: OpenAI;
 
-  constructor(apiKey: string, fetchImpl?: typeof fetch) {
+  constructor(
+    apiKey: string,
+    fetchImpl?: typeof fetch,
+    private readonly compress: Compressor = compressForUpload,
+  ) {
     this.openai = new OpenAI({
       apiKey,
       maxRetries: SDK_MAX_RETRIES,
@@ -47,9 +54,28 @@ export class WhisperTranscriber implements ITranscriber {
     }
 
     const diarize = options.diarize === true;
+    const model = diarize ? DIARIZE_MODEL : WHISPER_MODEL;
+    const tooLarge = needsCompression(fs.statSync(options.audioFilePath).size, limitsFor(model));
+    if (tooLarge) options.onProgress?.('Compressing audio for upload...');
+    const uploadPath = tooLarge ? this.compress(options.audioFilePath) : options.audioFilePath;
+    try {
+      return await this.send(options, uploadPath, diarize, model);
+    } finally {
+      if (uploadPath !== options.audioFilePath) {
+        fs.rmSync(path.dirname(uploadPath), { recursive: true, force: true });
+      }
+    }
+  }
+
+  private async send(
+    options: TranscribeOptions,
+    uploadPath: string,
+    diarize: boolean,
+    model: string,
+  ): Promise<TranscriptionResult> {
     const sendPrompt = !diarize && Boolean(options.prompt);
     options.onProgress?.('Preparing audio stream...');
-    const fileStream = fs.createReadStream(options.audioFilePath);
+    const fileStream = fs.createReadStream(uploadPath);
 
     options.onProgress?.(
       diarize
@@ -59,7 +85,7 @@ export class WhisperTranscriber implements ITranscriber {
 
     const response = await this.openai.audio.transcriptions.create({
       file: fileStream,
-      model: diarize ? DIARIZE_MODEL : WHISPER_MODEL,
+      model,
       language: options.language,
       response_format: diarize ? TranscriptionFormat.DIARIZED : options.format,
       ...(diarize ? { chunking_strategy: DIARIZE_CHUNKING } : {}),
@@ -68,7 +94,6 @@ export class WhisperTranscriber implements ITranscriber {
 
     options.onProgress?.('Response received from OpenAI.');
 
-    const model = diarize ? DIARIZE_MODEL : WHISPER_MODEL;
     if (!diarize) {
       return {
         raw: response as unknown as string,
