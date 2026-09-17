@@ -11,6 +11,7 @@ export interface CliFlags {
   language?: string;
   glossary?: string;
   copy?: boolean;
+  wrap?: boolean;
   yes?: boolean;
 }
 
@@ -22,6 +23,7 @@ export interface ResolvedOptions {
   language: LanguageCode;
   glossary: string;
   copyToClipboard: boolean;
+  wrapClipboard: boolean;
   confirmLongAudio: boolean;
 }
 
@@ -29,6 +31,7 @@ export const ENV_KEYS = {
   LANGUAGE: 'TRANSCRIBE_LANGUAGE',
   GLOSSARY: 'TRANSCRIBE_GLOSSARY',
   COPY: 'TRANSCRIBE_COPY',
+  WRAP: 'TRANSCRIBE_WRAP',
   SPEAKERS: 'TRANSCRIBE_SPEAKERS',
   ENGINE: 'TRANSCRIBE_ENGINE',
   YES: 'TRANSCRIBE_YES',
@@ -65,6 +68,12 @@ export function resolveOptions(
       parseBool(env[ENV_KEYS.COPY]),
       config.autoCopy,
       false,
+    ),
+    wrapClipboard: firstDefined(
+      flags.wrap,
+      parseBool(env[ENV_KEYS.WRAP]),
+      config.wrapClipboard,
+      true,
     ),
     confirmLongAudio: !firstDefined(flags.yes, parseBool(env[ENV_KEYS.YES]), false),
   };

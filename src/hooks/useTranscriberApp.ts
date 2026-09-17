@@ -181,6 +181,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,
               copyToClipboard: clipboardEnabled,
+              wrap: appConfig.wrapClipboard,
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
             });
 
@@ -214,6 +215,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       recorder,
       exit,
       appConfig.basePath,
+      appConfig.wrapClipboard,
       saveConfig,
     ],
   );

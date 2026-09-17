@@ -50,6 +50,7 @@ program
     'doctor — check the tools this setup needs · usage — what every transcription cost',
   )
   .option('--no-copy', 'Do not copy the result to the clipboard')
+  .option('--no-wrap', 'Copy the bare text, without the automatic-transcription notice')
   .option('-y, --yes', 'Skip the cost confirmation shown for long audio files')
   .parse(process.argv);
 
@@ -129,6 +130,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     ...appConfig,
     selectedLanguage: options.language,
     autoCopy: options.copyToClipboard,
+    wrapClipboard: options.wrapClipboard,
     engine: options.engine,
   };
 

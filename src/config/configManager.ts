@@ -27,6 +27,7 @@ export interface AppConfig {
   microphonePriority: string[];
   selectedLanguage: LanguageCode;
   autoCopy: boolean;
+  wrapClipboard: boolean;
   engine: Engine;
   localWhisper: LocalWhisperConfig;
   binPaths: BinPaths;
@@ -48,6 +49,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   microphonePriority: [],
   selectedLanguage: LanguageCode.ENGLISH,
   autoCopy: false,
+  wrapClipboard: true,
   engine: Engine.OPENAI,
   localWhisper: {
     binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),

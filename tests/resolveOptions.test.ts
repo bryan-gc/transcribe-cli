@@ -156,3 +156,14 @@ test('long audio asks for confirmation unless --yes or the environment says othe
   assert.equal(resolveOptions({ yes: true }, config(), {}).confirmLongAudio, false);
   assert.equal(resolveOptions({}, config(), { [ENV_KEYS.YES]: '1' }).confirmLongAudio, false);
 });
+
+test('the transcription notice is on by default and --no-wrap or the env turn it off', () => {
+  assert.equal(resolveOptions({}, config(), {}).wrapClipboard, true);
+  assert.equal(resolveOptions({ wrap: false }, config(), {}).wrapClipboard, false);
+  assert.equal(resolveOptions({}, config({ wrapClipboard: false }), {}).wrapClipboard, false);
+  assert.equal(resolveOptions({}, config(), { [ENV_KEYS.WRAP]: '0' }).wrapClipboard, false);
+  assert.equal(
+    resolveOptions({ wrap: true }, config({ wrapClipboard: false }), {}).wrapClipboard,
+    true,
+  );
+});

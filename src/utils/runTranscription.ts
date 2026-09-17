@@ -7,6 +7,7 @@ import { extractTextFromSrt } from './srtParser.js';
 import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
 import { appendUsage } from './usageLog.js';
+import { wrapTranscript } from './transcriptWrapper.js';
 import { buildGlossaryPrompt, type GlossaryPrompt } from './glossaryPrompt.js';
 import type { LanguageCode } from '../constants.js';
 import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
@@ -24,6 +25,7 @@ export interface TranscriptionJob {
   basePath?: string;
   source?: RecordingKind;
   copyToClipboard: boolean;
+  wrap?: boolean;
   onProgress?: (status: string) => void;
 }
 
@@ -44,6 +46,7 @@ export interface TranscriptionOutcome {
   meta: TranscriptionMeta;
   glossaryPrompt?: GlossaryPrompt;
   glossaryApplied: boolean;
+  clipboardText?: string;
 }
 
 export async function runTranscription(
@@ -114,12 +117,22 @@ export async function runTranscription(
 
   if (!job.copyToClipboard) return { ...base, clipboard: ClipboardOutcome.OFF };
 
+  const clipboardText = job.wrap
+    ? wrapTranscript(cleanText, {
+        language: job.language,
+        glossaryUsed: result.promptApplied ? glossaryPrompt?.text : undefined,
+        diarized: result.segments !== undefined,
+        audioSeconds: meta.audio.seconds,
+      })
+    : cleanText;
+
   try {
-    await copyTextToClipboard(cleanText);
-    return { ...base, clipboard: ClipboardOutcome.COPIED };
+    await copyTextToClipboard(clipboardText);
+    return { ...base, clipboard: ClipboardOutcome.COPIED, clipboardText };
   } catch (error) {
     return {
       ...base,
+      clipboardText,
       clipboard: ClipboardOutcome.FAILED,
       clipboardError: error instanceof Error ? error.message : String(error),
     };

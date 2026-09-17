@@ -156,3 +156,29 @@ test('the meta records which glossary was used and whether it was trimmed', asyn
     estimatedTokens: 3,
   });
 });
+
+test('the copied text carries the notice while the saved text stays bare', async () => {
+  const j = job({
+    copyToClipboard: true,
+    wrap: true,
+    glossary: 'Grafana',
+    language: LanguageCode.SPANISH,
+  });
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+
+  assert.match(outcome.clipboardText!, /^\[TRANSCRIPCIÓN AUTOMÁTICA/);
+  assert.match(
+    outcome.clipboardText!,
+    /\[Glosario usado como referencia de ortografía: Grafana\]$/,
+  );
+  assert.equal(fs.readFileSync(j.textPath, 'utf-8'), 'hola que tal');
+  assert.equal(outcome.text, 'hola que tal');
+});
+
+test('without wrap the copied text is the bare transcript', async () => {
+  const outcome = await runTranscription(
+    new MockTranscriber(SRT),
+    job({ copyToClipboard: true, wrap: false }),
+  );
+  assert.equal(outcome.clipboardText, 'hola que tal');
+});

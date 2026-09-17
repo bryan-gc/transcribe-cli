@@ -67,6 +67,7 @@ export function useImportTranscribe(
           basePath: appConfig.basePath,
           source: RecordingKind.IMPORTED,
           copyToClipboard: appConfig.autoCopy,
+          wrap: appConfig.wrapClipboard,
           onProgress: (msg) => setStatusText(`⏳ ${msg}`),
         });
 
