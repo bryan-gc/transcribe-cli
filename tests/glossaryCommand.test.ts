@@ -84,8 +84,8 @@ test('show prints exactly what would be sent, general first', async () => {
 test('an unknown subcommand lists the ones that exist', async () => {
   const { base, deps } = setup();
   await assert.rejects(
-    () => runGlossaryCommand(base, ['review'], true, deps),
-    /Available: edit, new, show, suggest/,
+    () => runGlossaryCommand(base, ['nope'], true, deps),
+    /Available: edit, new, show, suggest, review/,
   );
 });
 

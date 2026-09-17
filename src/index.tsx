@@ -16,6 +16,10 @@ import {
   resolveOptions,
   type ResolvedOptions,
 } from './config/resolveOptions.js';
+import { GlossaryReview } from './components/GlossaryReview.js';
+import { openInEditor } from './system/editor.js';
+import type { Candidate } from './glossary/extractTerms.js';
+import type { ReviewDecision } from './glossary/applyReview.js';
 import { runGlossaryCommand } from './glossary/glossaryCommand.js';
 import { loadGlossaryFiles } from './utils/fileUtils.js';
 import { needsSetup } from './transcriber/createTranscriber.js';
@@ -83,12 +87,30 @@ if (command === 'usage') {
 if (command === 'glossary') {
   try {
     const useGeneral = program.opts().generalGlossary !== false && config.useGeneralGlossary;
-    process.exit(await runGlossaryCommand(config.basePath, program.args.slice(1), useGeneral));
+    process.exit(
+      await runGlossaryCommand(config.basePath, program.args.slice(1), useGeneral, {
+        write: (text) => process.stdout.write(text),
+        edit: (file) => openInEditor(file),
+        review: process.stdout.isTTY ? reviewInTerminal : undefined,
+      }),
+    );
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(1);
   }
 }
+async function reviewInTerminal(
+  name: string,
+  candidates: Candidate[],
+): Promise<ReviewDecision[] | undefined> {
+  let saved: ReviewDecision[] | undefined;
+  const app = render(
+    <GlossaryReview name={name} candidates={candidates} onSave={(d) => (saved = d)} />,
+  );
+  await app.waitUntilExit();
+  return saved;
+}
+
 const basePathReady = ConfigManager.validateBasePath(config.basePath);
 
 let options: ResolvedOptions;

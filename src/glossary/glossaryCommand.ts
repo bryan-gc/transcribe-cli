@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { openInEditor } from '../system/editor.js';
 import { formatCandidates, GENERAL_NAME, suggestCandidates } from './candidates.js';
+import { applyReview, type ReviewDecision } from './applyReview.js';
+import type { Candidate } from './extractTerms.js';
 import {
   ensureGeneralGlossary,
   glossaryNameOf,
@@ -16,7 +18,7 @@ import {
 } from '../utils/glossaryPrompt.js';
 import { Encoding, EXT, GENERAL_GLOSSARY, getPaths } from '../constants.js';
 
-export const GLOSSARY_SUBCOMMANDS = ['edit', 'new', 'show', 'suggest'] as const;
+export const GLOSSARY_SUBCOMMANDS = ['edit', 'new', 'show', 'suggest', 'review'] as const;
 
 const VALID_NAME = /^[\p{L}\p{N}_-]+$/u;
 
@@ -32,6 +34,7 @@ export interface GlossarySummary {
 export interface GlossaryCommandDeps {
   write: (text: string) => void;
   edit: (file: string) => Promise<number>;
+  review?: (name: string, candidates: Candidate[]) => Promise<ReviewDecision[] | undefined>;
 }
 
 const defaultDeps: GlossaryCommandDeps = {
@@ -113,6 +116,29 @@ export async function runGlossaryCommand(
       );
     }
     return editAndSummarize(file, deps);
+  }
+
+  if (sub === 'review') {
+    const target = name ? path.basename(fileFor(dir, name), EXT.GLOSSARY) : GENERAL_NAME;
+    if (target !== GENERAL_NAME && !fs.existsSync(fileFor(dir, target))) {
+      throw new GlossaryCommandError(`No glossary called ${target}.`);
+    }
+    const store = suggestCandidates(basePath, target);
+    if (store.pending.length === 0 || !deps.review) {
+      deps.write(`${formatCandidates(target, store)}\n`);
+      if (store.pending.length > 0) deps.write('Reviewing needs an interactive terminal.\n');
+      return 0;
+    }
+    const decisions = await deps.review(target, store.pending);
+    if (!decisions) {
+      deps.write('Nothing saved.\n');
+      return 0;
+    }
+    const summary = applyReview(basePath, target, decisions);
+    deps.write(
+      `Saved: ${summary.addedToTopic} to ${target === GENERAL_NAME ? 'the topic' : target}, ${summary.addedToGeneral} to general, ${summary.rejected} rejected.\n`,
+    );
+    return 0;
   }
 
   if (sub === 'suggest') {

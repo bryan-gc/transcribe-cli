@@ -234,6 +234,27 @@ big query => BigQuery
 
 The `.meta.json` of each transcription records which glossary was used, never its content.
 
+#### Glossaries that fill themselves
+
+Nobody writes glossaries by hand, so they are learned from your own transcripts, with no model
+involved: words said in most notes are ordinary vocabulary, and what is left gets proposed when
+it is capitalised mid-sentence, has a technical shape (`gpt-4o`, `DynamoDB`), or comes as a
+repeated pair (`Cloud Run`).
+
+- After every transcription, terms used in at least three recent notes are added to an
+  **automatic block** at the bottom of `general.txt`. Delete a line there and that term is never
+  added again. What you write above the block is never touched.
+- Suggestions for the topic in use are kept for review:
+
+```bash
+transcribe-cli glossary suggest [name]  # list what would be proposed
+transcribe-cli glossary review [name]   # a add · g add to general · x reject · e fix the spelling
+```
+
+Fixing a spelling in review adds the right form and a replacement for the wrong one.
+**Glossary learning** in `transcribe-cli -c` (key `a`) switches between *auto*, *suggest only*
+and *off*.
+
 There are two kinds: `general.txt`, used on every run, and **topic** glossaries you add with
 `-g <name>`. The topic goes last, so when both do not fit it is the general one that loses lines.
 `-g none` sends no glossary at all; `--no-general-glossary` leaves the general one out.
