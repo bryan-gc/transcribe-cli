@@ -123,3 +123,51 @@ test('the continuity prompt keeps the glossary and the last forty words, tail la
   assert.ok(prompt.endsWith('w59'));
   assert.equal(continuityPrompt(undefined, undefined), undefined);
 });
+
+test('with speakers, later pieces get voice clips from the first one and keep its labels', async () => {
+  const { deps, options } = setup(900);
+  const clips: { from: number; to: number; target: string }[] = [];
+  const seen: TranscribeOptions[] = [];
+  const inner: ITranscriber = {
+    async transcribe(o) {
+      seen.push(o);
+      const first = seen.length === 1;
+      const segments = first
+        ? [
+            { speaker: 'A', start: 0, end: 20, text: 'hola soy Ana' },
+            { speaker: 'B', start: 21, end: 26, text: 'y yo Luis' },
+          ]
+        : [
+            { speaker: '1·A', start: 0, end: 5, text: 'sigo yo' },
+            { speaker: 'A', start: 6, end: 9, text: 'una voz nueva' },
+          ];
+      return { raw: '{}', segments, engine: 'mock', model: 'diarize', promptApplied: false };
+    },
+  };
+
+  const result = await new ChunkedTranscriber(inner, {
+    ...deps,
+    cutClip: (_ff, _source, target, from, to) => {
+      clips.push({ from, to, target });
+      fs.writeFileSync(target, 'clip');
+    },
+  }).transcribe({ ...options, diarize: true });
+
+  assert.equal(seen[0]!.knownSpeakers, undefined, 'the first piece has nothing to go on');
+  assert.deepEqual(
+    seen[1]!.knownSpeakers?.map((s) => s.name),
+    ['1·A', '1·B'],
+  );
+  assert.deepEqual(
+    clips.map(({ from, to }) => [from, to]),
+    [
+      [0, 10],
+      [21, 26],
+    ],
+  );
+  assert.deepEqual(
+    result.segments!.map((s) => s.speaker),
+    ['1·A', '1·B', '1·A', '2·A'],
+    'named voices keep one label; a new voice gets its piece number',
+  );
+});

@@ -33,13 +33,16 @@ export function mergeSrt(parts: SrtPart[]): string {
 
 export function mergeDiarized(
   parts: DiarizedPart[],
-  options: { prefixSpeakers: boolean },
+  options: { prefixSpeakers: boolean; knownNames?: Set<string> },
 ): DiarizedSegment[] {
   const prefix = options.prefixSpeakers && parts.length > 1;
   return parts.flatMap((part, index) =>
     part.segments.map((segment) => ({
       ...segment,
-      speaker: prefix ? `${index + 1}·${segment.speaker}` : segment.speaker,
+      speaker:
+        prefix && !options.knownNames?.has(segment.speaker)
+          ? `${index + 1}·${segment.speaker}`
+          : segment.speaker,
       start: segment.start + part.offsetSeconds,
       end: segment.end + part.offsetSeconds,
     })),

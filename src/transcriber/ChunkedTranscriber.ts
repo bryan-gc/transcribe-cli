@@ -4,13 +4,16 @@ import crypto from 'crypto';
 import type {
   DiarizedSegment,
   ITranscriber,
+  KnownSpeaker,
   TranscribeOptions,
   TranscriptionResult,
   TranscriptionUsage,
 } from './ITranscriber.js';
 import { audioDurationSeconds } from '../audio/audioDuration.js';
 import { limitsFor, needsChunking } from '../audio/chunkPlan.js';
-import { requireFfmpeg } from '../audio/compress.js';
+import { COMPRESSED_EXT, convertAudio, requireFfmpeg } from '../audio/compress.js';
+import { absorbShortFlips, pickReference, speakersByTalkTime } from '../speakers/pickReference.js';
+import { MAX_KNOWN_SPEAKERS } from './WhisperTranscriber.js';
 import {
   detectSilences,
   planCuts,
@@ -48,6 +51,7 @@ export interface ChunkedTranscriberDeps {
     dir: string,
   ) => AudioChunk[];
   sleep?: (ms: number) => Promise<void>;
+  cutClip?: (ffmpeg: string, source: string, target: string, from: number, to: number) => void;
 }
 
 interface StoredPart {
@@ -104,7 +108,16 @@ export class ChunkedTranscriber implements ITranscriber {
         `Transcribing part ${chunk.index + 1} of ${chunks.length} (${formatDuration(chunk.offsetSeconds * 1000)}–${formatDuration((chunk.offsetSeconds + chunk.durationSeconds) * 1000)})...`,
       );
       const prompt = continuityPrompt(options.prompt, parts.at(-1));
-      const { part, attempts } = await this.transcribeChunk(options, chunk, chunks.length, prompt);
+      const knownSpeakers =
+        options.diarize && chunk.index > 0
+          ? this.referencesFrom(ffmpeg, chunks[0]!, parts[0]!, workDir)
+          : undefined;
+      const { part, attempts } = await this.transcribeChunk(
+        { ...options, knownSpeakers },
+        chunk,
+        chunks.length,
+        prompt,
+      );
       retries += attempts - 1;
       fs.writeFileSync(stored, JSON.stringify(part), Encoding.UTF8);
       parts.push(part);
@@ -113,6 +126,32 @@ export class ChunkedTranscriber implements ITranscriber {
     const result = merge(parts, chunks, options.diarize === true);
     fs.rmSync(workDir, { recursive: true, force: true });
     return { ...result, chunks: { count: chunks.length, hardCuts, retries } };
+  }
+
+  private referencesFrom(
+    ffmpeg: string,
+    firstChunk: AudioChunk,
+    firstPart: StoredPart,
+    workDir: string,
+  ): KnownSpeaker[] {
+    const segments = absorbShortFlips(firstPart.segments ?? []);
+    const speakers: KnownSpeaker[] = [];
+    for (const speaker of speakersByTalkTime(segments).slice(0, MAX_KNOWN_SPEAKERS)) {
+      const span = pickReference(segments, speaker);
+      if (!span) continue;
+      const referencePath = path.join(workDir, `speaker-${speakers.length + 1}${COMPRESSED_EXT}`);
+      if (!fs.existsSync(referencePath)) {
+        (this.deps.cutClip ?? defaultCutClip)(
+          ffmpeg,
+          firstChunk.path,
+          referencePath,
+          span.start,
+          span.end,
+        );
+      }
+      speakers.push({ name: firstChunkLabel(speaker), referencePath });
+    }
+    return speakers;
   }
 
   private async transcribeChunk(
@@ -173,6 +212,14 @@ export class ChunkedTranscriber implements ITranscriber {
   }
 }
 
+export function firstChunkLabel(speaker: string): string {
+  return `1·${speaker}`;
+}
+
+function defaultCutClip(ffmpeg: string, source: string, target: string, from: number, to: number) {
+  convertAudio(ffmpeg, source, target, true, { from, to });
+}
+
 function defaultSilences(ffmpeg: string, file: string, lax: boolean): Silence[] {
   return detectSilences(ffmpeg, file, lax ? SILENCE_LAX : SILENCE_STRICT);
 }
@@ -197,10 +244,13 @@ function merge(parts: StoredPart[], chunks: AudioChunk[], diarize: boolean): Tra
   if (diarize) {
     const segments = mergeDiarized(
       parts.map((p, i) => ({
-        segments: p.segments ?? [],
+        segments: absorbShortFlips(p.segments ?? []),
         offsetSeconds: chunks[i]!.offsetSeconds,
       })),
-      { prefixSpeakers: true },
+      {
+        prefixSpeakers: true,
+        knownNames: new Set(speakersByTalkTime(parts[0]!.segments ?? []).map(firstChunkLabel)),
+      },
     );
     return {
       raw: JSON.stringify({ segments }),
