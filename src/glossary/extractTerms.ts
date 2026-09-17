@@ -100,7 +100,13 @@ export function extractCandidates(docs: Doc[], options: ExtractOptions = {}): Ca
       if (isCommon(token.key)) return;
       record(stats, token.key, token.form, doc, inTopic, text, token.index, token.midSentence);
       const previous = tokens[i - 1];
-      if (previous && token.joinedToPrevious && !isCommon(previous.key)) {
+      if (
+        previous &&
+        token.joinedToPrevious &&
+        !isCommon(previous.key) &&
+        looksLikeTerm(previous.form) &&
+        looksLikeTerm(token.form)
+      ) {
         const form = `${previous.form} ${token.form}`;
         const stat = record(
           stats,
@@ -161,6 +167,10 @@ export function extractCandidates(docs: Doc[], options: ExtractOptions = {}): Ca
   return candidates
     .sort((a, b) => b.score - a.score || b.count - a.count || a.term.localeCompare(b.term))
     .slice(0, options.limit ?? DEFAULT_LIMIT);
+}
+
+function looksLikeTerm(form: string): boolean {
+  return /^\p{Lu}/u.test(form) || SHAPES.some((shape) => shape.test(form));
 }
 
 function stripLabels(text: string): string {
