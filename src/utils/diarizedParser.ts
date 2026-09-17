@@ -17,6 +17,12 @@ export function parseDiarized(raw: string): DiarizedSegment[] {
   });
 }
 
+const ANONYMOUS_LABEL = /^(\d+·)?[A-Z]$/;
+
+export function speakerTag(speaker: string): string {
+  return ANONYMOUS_LABEL.test(speaker) ? `Speaker ${speaker}` : speaker;
+}
+
 export function formatDiarized(segments: DiarizedSegment[]): string {
   const spoken = segments.filter((s) => s.text !== '');
   if (spoken.length === 0) return '';
@@ -26,7 +32,7 @@ export function formatDiarized(segments: DiarizedSegment[]): string {
   if (new Set(spoken.map((s) => s.speaker)).size < 2) {
     return turns.map(text).join(' ');
   }
-  return turns.map((turn) => `[Speaker ${turn[0]!.speaker}] ${text(turn)}`).join('\n');
+  return turns.map((turn) => `[${speakerTag(turn[0]!.speaker)}] ${text(turn)}`).join('\n');
 }
 
 export function buildSrtFromDiarized(segments: DiarizedSegment[]): string {
@@ -52,7 +58,7 @@ export function buildSrtFromDiarized(segments: DiarizedSegment[]): string {
 
   return cues
     .map((cue, index) => {
-      const label = multiSpeaker ? `[Speaker ${cue.speaker}] ` : '';
+      const label = multiSpeaker ? `[${speakerTag(cue.speaker)}] ` : '';
       return `${index + 1}\n${srtTime(cue.start)} --> ${srtTime(cue.end)}\n${label}${cue.text}\n`;
     })
     .join('\n');
