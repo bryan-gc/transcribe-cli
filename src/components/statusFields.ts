@@ -15,6 +15,20 @@ export function languageField(language: LanguageCode): StatusField {
 }
 
 export function glossaryField(label: string, run: TranscriptionOutcome | null = null): StatusField {
+  const field = promptField(label, run);
+  const learned = learnedNote(run);
+  return learned ? { ...field, value: `${field.value}${learned}` } : field;
+}
+
+function learnedNote(run: TranscriptionOutcome | null): string {
+  const parts = [
+    run?.learned?.autoAdded ? `+${run.learned.autoAdded} auto` : '',
+    run?.learned?.suggestions ? `${run.learned.suggestions} suggestions` : '',
+  ].filter(Boolean);
+  return parts.length > 0 ? ` · ${parts.join(' · ')}` : '';
+}
+
+function promptField(label: string, run: TranscriptionOutcome | null): StatusField {
   const prompt = run?.glossaryPrompt;
   if (!prompt) return { label: 'Glossary', value: label };
   if (!run.glossaryApplied) {

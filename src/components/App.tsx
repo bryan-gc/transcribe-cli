@@ -3,6 +3,7 @@ import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { chunkMinutesFrom, DEFAULT_CHUNK_MINUTES } from '../audio/chunkPlan.js';
+import { GlossaryLearning } from '../glossary/learnGlossary.js';
 import { glossaryOptionLabel, readGlossarySummary } from '../glossary/glossaryCommand.js';
 import { Picker } from './Picker.js';
 import { PriorityPicker } from './PriorityPicker.js';
@@ -32,6 +33,12 @@ import {
 
 const CHUNK_MINUTE_CHOICES = [3, 5, 8, 10, 15, 20];
 
+const GLOSSARY_LEARNING_LABELS: Record<GlossaryLearning, string> = {
+  [GlossaryLearning.AUTO]: 'auto (general fills itself)',
+  [GlossaryLearning.REVIEW]: 'suggest only',
+  [GlossaryLearning.OFF]: 'off',
+};
+
 interface MenuEntry {
   id: MenuAction;
   label: string;
@@ -46,6 +53,7 @@ const MAIN_OPTIONS: MenuEntry[] = [
   { id: MenuAction.CHANGE_LANGUAGE, label: 'Language', section: 'Settings' },
   { id: MenuAction.CHANGE_GLOSSARY, label: 'Glossary', section: 'Settings' },
   { id: MenuAction.TOGGLE_GENERAL_GLOSSARY, label: 'General glossary', section: 'Settings' },
+  { id: MenuAction.CYCLE_GLOSSARY_LEARNING, label: 'Glossary learning', section: 'Settings' },
   { id: MenuAction.CHANGE_MICROPHONE, label: 'Microphone', section: 'Settings' },
   { id: MenuAction.CHANGE_ENGINE, label: 'Engine', section: 'Settings' },
   { id: MenuAction.CHANGE_CHUNK_LENGTH, label: 'Long audio pieces', section: 'Settings' },
@@ -132,6 +140,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     [MenuAction.CHANGE_LANGUAGE]: LANGUAGE_NAMES[activeLanguage],
     [MenuAction.CHANGE_GLOSSARY]: glossaryLabel,
     [MenuAction.TOGGLE_GENERAL_GLOSSARY]: generalGlossaryEnabled ? 'On' : 'Off',
+    [MenuAction.CYCLE_GLOSSARY_LEARNING]: GLOSSARY_LEARNING_LABELS[appConfig.autoGlossary],
     [MenuAction.CHANGE_MICROPHONE]: micSummary,
     [MenuAction.CHANGE_ENGINE]: engineField(activeEngine, null).value,
     [MenuAction.CHANGE_CHUNK_LENGTH]: `up to ${chunkMinutesFrom(appConfig.chunkMaxMinutes)} min`,

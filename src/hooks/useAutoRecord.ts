@@ -180,6 +180,7 @@ export function useAutoRecord(
         source: RecordingKind.RECORDED,
         copyToClipboard: appConfig.autoCopy,
         wrap: appConfig.wrapClipboard,
+        glossaryLearning: appConfig.autoGlossary,
         onProgress: (msg) => setStatusText(`⏳ ${msg}`),
       });
 

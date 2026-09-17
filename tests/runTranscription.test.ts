@@ -11,6 +11,7 @@ import {
   type TranscriptionJob,
 } from '../src/utils/runTranscription.js';
 import { MockTranscriber } from '../src/transcriber/MockTranscriber.js';
+import { GlossaryLearning } from '../src/glossary/learnGlossary.js';
 import { LanguageCode } from '../src/constants.js';
 
 const SRT = '1\n00:00:00,000 --> 00:00:01,000\nhola que tal\n';
@@ -201,4 +202,44 @@ test('replacements also reach speaker-labelled transcripts, which get no prompt'
   assert.match(outcome.text, /arrancamos/);
   assert.doesNotMatch(outcome.text, /empezamos/);
   assert.match(fs.readFileSync(j.srtPath, 'utf-8'), /arrancamos/);
+});
+
+function jobInBase(over: Partial<TranscriptionJob> = {}): TranscriptionJob {
+  const basePath = fs.mkdtempSync(path.join(os.tmpdir(), 'learn-'));
+  const dir = path.join(basePath, 'transcriptions', 'recorded', '2026-09-10');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(path.join(basePath, 'glossaries'));
+  const audioPath = path.join(dir, 'new.wav');
+  fs.writeFileSync(audioPath, Buffer.alloc(16));
+  return {
+    ...job(),
+    audioPath,
+    srtPath: path.join(dir, 'new.srt'),
+    textPath: path.join(dir, 'new.txt'),
+    basePath,
+    ...over,
+  };
+}
+
+test('after transcribing, the history teaches the glossary without touching the result', async () => {
+  const j = jobInBase({ glossaryLearning: GlossaryLearning.AUTO, glossaryName: 'devops' });
+  const dir = path.dirname(j.textPath);
+  for (let i = 0; i < 4; i++) {
+    fs.writeFileSync(path.join(dir, `old-${i}.txt`), 'hablamos con Zorblax otra vez');
+  }
+  fs.writeFileSync(path.join(j.basePath!, 'glossaries', 'devops.txt'), 'Grafana\n');
+
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+  assert.equal(outcome.text, 'hola que tal');
+  assert.equal(outcome.learned?.autoAdded, 1);
+  const glossaries = path.join(j.basePath!, 'glossaries');
+  assert.match(fs.readFileSync(path.join(glossaries, 'general.txt'), 'utf-8'), /Zorblax/);
+  assert.ok(fs.existsSync(path.join(glossaries, '.candidates', 'devops.json')));
+});
+
+test('with learning off nothing is written to the glossaries', async () => {
+  const j = jobInBase({ glossaryLearning: GlossaryLearning.OFF });
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+  assert.equal(outcome.learned, undefined);
+  assert.deepEqual(fs.readdirSync(path.join(j.basePath!, 'glossaries')), []);
 });

@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import { DIR, EXT, LanguageCode, LEGACY_DATA_DIR, RecordingKind } from '../constants.js';
 import { ensureGeneralGlossary } from '../utils/fileUtils.js';
+import { GlossaryLearning } from '../glossary/learnGlossary.js';
 
 export enum Engine {
   OPENAI = 'openai',
@@ -31,6 +32,7 @@ export interface AppConfig {
   wrapClipboard: boolean;
   useGeneralGlossary: boolean;
   chunkMaxMinutes: number;
+  autoGlossary: GlossaryLearning;
   engine: Engine;
   localWhisper: LocalWhisperConfig;
   binPaths: BinPaths;
@@ -55,6 +57,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   wrapClipboard: true,
   useGeneralGlossary: true,
   chunkMaxMinutes: 10,
+  autoGlossary: GlossaryLearning.AUTO,
   engine: Engine.OPENAI,
   localWhisper: {
     binPath: path.join(CONFIG_DIR, 'venv-whisperx', 'bin', 'whisperx'),

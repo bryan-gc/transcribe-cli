@@ -1,6 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import type { ITranscriber, TranscriptionUsage } from '../transcriber/ITranscriber.js';
+import type {
+  ITranscriber,
+  TranscriptionResult,
+  TranscriptionUsage,
+} from '../transcriber/ITranscriber.js';
+import {
+  learnFromTranscripts,
+  type GlossaryLearning,
+  type LearnedGlossary,
+} from '../glossary/learnGlossary.js';
 import { audioDurationSeconds } from '../audio/audioDuration.js';
 import { buildMeta, type TranscriptionMeta } from './transcriptionMeta.js';
 import { extractTextFromSrt } from './srtParser.js';
@@ -27,6 +36,7 @@ export interface TranscriptionJob {
   source?: RecordingKind;
   copyToClipboard: boolean;
   wrap?: boolean;
+  glossaryLearning?: GlossaryLearning;
   onProgress?: (status: string) => void;
 }
 
@@ -48,6 +58,7 @@ export interface TranscriptionOutcome {
   glossaryPrompt?: GlossaryPrompt;
   glossaryApplied: boolean;
   clipboardText?: string;
+  learned?: LearnedGlossary;
 }
 
 export async function runTranscription(
@@ -126,7 +137,22 @@ export async function runTranscription(
     glossaryApplied: result.promptApplied,
   };
 
-  if (!job.copyToClipboard) return { ...base, clipboard: ClipboardOutcome.OFF };
+  const copied = await copyIfWanted(job, cleanText, result, glossaryPrompt, meta);
+  const learned =
+    job.basePath && job.glossaryLearning
+      ? learnFromTranscripts(job.basePath, job.glossaryLearning, job.glossaryName)
+      : undefined;
+  return { ...base, ...copied, ...(learned ? { learned } : {}) };
+}
+
+async function copyIfWanted(
+  job: TranscriptionJob,
+  cleanText: string,
+  result: TranscriptionResult,
+  glossaryPrompt: GlossaryPrompt | undefined,
+  meta: TranscriptionMeta,
+): Promise<Pick<TranscriptionOutcome, 'clipboard' | 'clipboardText' | 'clipboardError'>> {
+  if (!job.copyToClipboard) return { clipboard: ClipboardOutcome.OFF };
 
   const clipboardText = job.wrap
     ? wrapTranscript(cleanText, {
@@ -139,10 +165,9 @@ export async function runTranscription(
 
   try {
     await copyTextToClipboard(clipboardText);
-    return { ...base, clipboard: ClipboardOutcome.COPIED, clipboardText };
+    return { clipboard: ClipboardOutcome.COPIED, clipboardText };
   } catch (error) {
     return {
-      ...base,
       clipboardText,
       clipboard: ClipboardOutcome.FAILED,
       clipboardError: error instanceof Error ? error.message : String(error),

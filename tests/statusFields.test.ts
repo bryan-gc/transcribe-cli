@@ -97,3 +97,14 @@ test('the clipboard field says when copies carry the transcription notice', () =
   );
   assert.equal(clipboardField(false, null, true).value, 'Off');
 });
+
+test('the glossary field mentions what the last run learned', () => {
+  assert.equal(
+    glossaryField('general', run({ learned: { autoAdded: 2, suggestions: 5 } })).value,
+    'general · +2 auto · 5 suggestions',
+  );
+  assert.equal(
+    glossaryField('general', run({ learned: { autoAdded: 0, suggestions: 0 } })).value,
+    'general',
+  );
+});

@@ -253,6 +253,7 @@ export enum MenuAction {
   TOGGLE_WRAP = 'w',
   TOGGLE_GENERAL_GLOSSARY = 'n',
   CHANGE_CHUNK_LENGTH = 'k',
+  CYCLE_GLOSSARY_LEARNING = 'a',
   QUIT = 'q',
 }
 

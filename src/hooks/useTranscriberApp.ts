@@ -1,3 +1,4 @@
+import { nextGlossaryLearning } from '../glossary/learnGlossary.js';
 import { useState, useRef, useCallback } from 'react';
 import fs from 'fs';
 import { AudioRecorder } from '../audio/recorder.js';
@@ -170,6 +171,13 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
           });
           break;
 
+        case MenuAction.CYCLE_GLOSSARY_LEARNING: {
+          const next = nextGlossaryLearning(appConfig.autoGlossary);
+          saveConfig({ autoGlossary: next });
+          setStatusText(`Glossary learning: ${next}.`);
+          break;
+        }
+
         case MenuAction.TOGGLE_WRAP:
           setWrapEnabled((prev) => {
             const newValue = !prev;
@@ -210,6 +218,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               source: RecordingKind.RECORDED,
               copyToClipboard: clipboardEnabled,
               wrap: wrapEnabled,
+              glossaryLearning: appConfig.autoGlossary,
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
             });
 
@@ -243,6 +252,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       recorder,
       exit,
       appConfig.basePath,
+      appConfig.autoGlossary,
       generalGlossaryEnabled,
       wrapEnabled,
       saveConfig,
