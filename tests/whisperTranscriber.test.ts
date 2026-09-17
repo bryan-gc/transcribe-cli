@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { WhisperTranscriber } from '../src/transcriber/WhisperTranscriber.js';
+import { speakerReferences, WhisperTranscriber } from '../src/transcriber/WhisperTranscriber.js';
 import { LanguageCode, TranscriptionFormat, WHISPER_MODEL } from '../src/constants.js';
 
 function stubFetch(body: string) {
@@ -141,4 +141,52 @@ test('audio under the limit is sent as it is, without compressing', async () => 
     format: TranscriptionFormat.SRT,
   });
   assert.equal(compressed, false);
+});
+
+test('known speakers travel as repeated name and data-url fields, in the same order', async () => {
+  const { impl, seen } = stubFetch('{"text":"hola","segments":[]}');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-ref-'));
+  const refs = ['ana.mp3', 'luis.wav'].map((name) => {
+    const file = path.join(dir, name);
+    fs.writeFileSync(file, Buffer.from(name));
+    return file;
+  });
+
+  await new WhisperTranscriber('sk-test', impl).transcribe({
+    audioFilePath: tempAudio(),
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.SRT,
+    diarize: true,
+    knownSpeakers: [
+      { name: 'Ana', referencePath: refs[0]! },
+      { name: 'Luis', referencePath: refs[1]! },
+    ],
+  });
+
+  const form = seen[0]!.form!;
+  assert.deepEqual(form.getAll('known_speaker_names[]'), ['Ana', 'Luis']);
+  const references = form.getAll('known_speaker_references[]') as string[];
+  assert.equal(references.length, 2);
+  assert.equal(
+    references[0],
+    `data:audio/mpeg;base64,${Buffer.from('ana.mp3').toString('base64')}`,
+  );
+  assert.match(references[1]!, /^data:audio\/wav;base64,/);
+});
+
+test('only four known speakers are sent, and none without --speakers', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-ref-'));
+  const clip = path.join(dir, 'clip.mp3');
+  fs.writeFileSync(clip, 'x');
+  const speakers = ['A', 'B', 'C', 'D', 'E'].map((name) => ({ name, referencePath: clip }));
+  assert.equal(speakerReferences(speakers).known_speaker_names.length, 4);
+
+  const { impl, seen } = stubFetch('text');
+  await new WhisperTranscriber('sk-test', impl).transcribe({
+    audioFilePath: tempAudio(),
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.TEXT,
+    knownSpeakers: speakers,
+  });
+  assert.equal(seen[0]!.form!.has('known_speaker_names[]'), false);
 });

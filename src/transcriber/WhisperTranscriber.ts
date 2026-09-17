@@ -3,6 +3,7 @@ import path from 'path';
 import OpenAI from 'openai';
 import type {
   ITranscriber,
+  KnownSpeaker,
   TranscribeOptions,
   TranscriptionResult,
   TranscriptionUsage,
@@ -29,6 +30,31 @@ function readUsage(response: unknown): TranscriptionUsage | undefined {
     inputTokens: input,
     outputTokens: output,
     totalTokens: usage.total_tokens ?? input + output,
+  };
+}
+
+export const MAX_KNOWN_SPEAKERS = 4;
+
+const AUDIO_MIME: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.ogg': 'audio/ogg',
+  '.webm': 'audio/webm',
+  '.flac': 'audio/flac',
+};
+
+export function speakerReferences(speakers: KnownSpeaker[]): {
+  known_speaker_names: string[];
+  known_speaker_references: string[];
+} {
+  const chosen = speakers.slice(0, MAX_KNOWN_SPEAKERS);
+  return {
+    known_speaker_names: chosen.map((s) => s.name),
+    known_speaker_references: chosen.map((s) => {
+      const mime = AUDIO_MIME[path.extname(s.referencePath).toLowerCase()] ?? 'audio/mpeg';
+      return `data:${mime};base64,${fs.readFileSync(s.referencePath).toString('base64')}`;
+    }),
   };
 }
 
@@ -89,6 +115,7 @@ export class WhisperTranscriber implements ITranscriber {
       language: options.language,
       response_format: diarize ? TranscriptionFormat.DIARIZED : options.format,
       ...(diarize ? { chunking_strategy: DIARIZE_CHUNKING } : {}),
+      ...(diarize && options.knownSpeakers?.length ? speakerReferences(options.knownSpeakers) : {}),
       ...(sendPrompt ? { prompt: options.prompt } : {}),
     });
 

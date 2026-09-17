@@ -7,12 +7,18 @@ export interface DiarizedSegment {
   text: string;
 }
 
+export interface KnownSpeaker {
+  name: string;
+  referencePath: string;
+}
+
 export interface TranscribeOptions {
   audioFilePath: string;
   language: LanguageCode;
   format: TranscriptionFormat;
   prompt?: string;
   diarize?: boolean;
+  knownSpeakers?: KnownSpeaker[];
   onProgress?: (status: string) => void;
 }
 
