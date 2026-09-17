@@ -8,6 +8,7 @@ import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
 import { appendUsage } from './usageLog.js';
 import { wrapTranscript } from './transcriptWrapper.js';
+import { applyReplacements, parseReplacements } from './replacements.js';
 import { buildGlossaryPrompt, type GlossaryPrompt } from './glossaryPrompt.js';
 import type { LanguageCode } from '../constants.js';
 import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
@@ -70,10 +71,18 @@ export async function runTranscription(
 
   job.onProgress?.('Saving files...');
 
-  const srtContent = result.segments ? buildSrtFromDiarized(result.segments) : result.raw;
-  const cleanText = result.segments
+  const rules = parseReplacements(job.glossary);
+  const segments = result.segments?.map((segment) => ({
+    ...segment,
+    text: applyReplacements(segment.text, rules).text,
+  }));
+  const srtContent = segments
+    ? buildSrtFromDiarized(segments)
+    : applyReplacements(result.raw, rules).text;
+  const unreplaced = result.segments
     ? formatDiarized(result.segments)
     : extractTextFromSrt(result.raw);
+  const { text: cleanText, count: replacements } = applyReplacements(unreplaced, rules);
 
   fs.writeFileSync(job.srtPath, srtContent, Encoding.UTF8);
   fs.writeFileSync(job.textPath, cleanText, Encoding.UTF8);
@@ -98,6 +107,7 @@ export async function runTranscription(
             applied: result.promptApplied,
             trimmed: glossaryPrompt.trimmed,
             estimatedTokens: glossaryPrompt.estimatedTokens,
+            ...(replacements > 0 ? { replacements } : {}),
           }
         : undefined,
   });

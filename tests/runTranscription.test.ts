@@ -182,3 +182,23 @@ test('without wrap the copied text is the bare transcript', async () => {
   );
   assert.equal(outcome.clipboardText, 'hola que tal');
 });
+
+test('glossary replacements fix the saved text and srt, and the meta counts them', async () => {
+  const j = job({ glossary: 'Grafana\nque tal => qué tal', glossaryName: 'demo' });
+  const outcome = await runTranscription(new MockTranscriber(SRT), j);
+  assert.equal(outcome.text, 'hola qué tal');
+  assert.match(fs.readFileSync(j.srtPath, 'utf-8'), /hola qué tal/);
+  assert.equal(outcome.meta.glossary?.replacements, 1);
+});
+
+test('replacements also reach speaker-labelled transcripts, which get no prompt', async () => {
+  const diarized = fs.readFileSync(
+    path.join(import.meta.dirname, 'fixtures', 'diarized-response.json'),
+    'utf-8',
+  );
+  const j = job({ diarize: true, glossary: 'empezamos => arrancamos' });
+  const outcome = await runTranscription(new MockTranscriber(diarized), j);
+  assert.match(outcome.text, /arrancamos/);
+  assert.doesNotMatch(outcome.text, /empezamos/);
+  assert.match(fs.readFileSync(j.srtPath, 'utf-8'), /arrancamos/);
+});

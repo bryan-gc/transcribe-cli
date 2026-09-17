@@ -221,6 +221,17 @@ panel says when that happens (`trimmed: kept the last 9 of 25 lines`).
 | Local (WhisperX) | Sent as `--hotwords` |
 | `--speakers` | Not used: the speaker-labelling model does not accept a prompt |
 
+A line with `=>` is a **replacement** instead of a term: it is never sent, and after
+transcribing it fixes that phrase in the text, the subtitles and the speaker transcript, as a
+whole word and ignoring case. It is the way to correct a name the engine keeps getting wrong, and
+the only glossary help `--speakers` gets.
+
+```text
+Cloud Run
+cloud ran => Cloud Run
+big query => BigQuery
+```
+
 The `.meta.json` of each transcription records which glossary was used, never its content.
 
 There are two kinds: `general.txt`, used on every run, and **topic** glossaries you add with

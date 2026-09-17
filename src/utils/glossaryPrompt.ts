@@ -1,3 +1,5 @@
+import { isReplacementLine } from './replacements.js';
+
 export const PROMPT_TOKEN_BUDGET = 220;
 
 const CHARS_PER_TOKEN = 3;
@@ -18,7 +20,7 @@ export function glossaryLines(raw: string): string[] {
   return raw
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line !== '' && !line.startsWith(COMMENT_PREFIX));
+    .filter((line) => line !== '' && !line.startsWith(COMMENT_PREFIX) && !isReplacementLine(line));
 }
 
 export function buildGlossaryPrompt(

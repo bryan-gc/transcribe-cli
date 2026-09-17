@@ -18,6 +18,7 @@ export interface GlossaryMeta {
   applied: boolean;
   trimmed: boolean;
   estimatedTokens: number;
+  replacements?: number;
 }
 
 export interface TranscriptionMeta {
