@@ -48,6 +48,7 @@ program
   .option('-g, --glossary <name>', 'Topic glossary to add to the general one (none: no glossary)')
   .option('--no-general-glossary', 'Leave the general glossary out of this run')
   .option('-s, --speakers', 'Detect and label who is speaking')
+  .option('--name-speakers', 'With -f: label speakers, then name each voice after listening to it')
   .option('--local', 'Use the local WhisperX engine instead of the API')
   .option('--engine <name>', 'openai | local')
   .option('--all', 'With doctor: list every check · with usage: list every run')
@@ -176,6 +177,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
         filePath={options.file}
         glossary={options.glossary}
         diarize={options.diarize}
+        nameSpeakers={options.nameSpeakers}
         confirmLongAudio={options.confirmLongAudio}
       />
     );

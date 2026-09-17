@@ -3,6 +3,7 @@ import { Box, Text, useInput, useApp } from 'ink';
 import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { Header } from './Header.js';
 import { PreflightPrompt } from './PreflightPrompt.js';
+import { SpeakerNaming } from './SpeakerNaming.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
@@ -22,12 +23,14 @@ export function ImportApp({
   glossary,
   diarize,
   confirmLongAudio,
+  nameSpeakers = false,
 }: {
   appConfig: AppConfig;
   filePath: string;
   glossary: string;
   diarize: boolean;
   confirmLongAudio: boolean;
+  nameSpeakers?: boolean;
 }) {
   const { exit } = useApp();
   const { state, actions } = useImportTranscribe(
@@ -36,6 +39,7 @@ export function ImportApp({
     glossary,
     diarize,
     confirmLongAudio,
+    nameSpeakers,
     exit,
   );
 
@@ -52,6 +56,7 @@ export function ImportApp({
     audioPath,
     textPath,
     canRetry,
+    naming,
   } = state;
 
   useInput(
@@ -85,6 +90,15 @@ export function ImportApp({
           clipboardField(appConfig.autoCopy, lastRun, appConfig.wrapClipboard),
         ]}
       />
+
+      {naming !== null && (
+        <SpeakerNaming
+          speakers={naming.speakers}
+          clips={naming.clips}
+          onPlay={actions.playClip}
+          onDone={(names) => void actions.finishNaming(names)}
+        />
+      )}
 
       {preflight !== null && (
         <PreflightPrompt

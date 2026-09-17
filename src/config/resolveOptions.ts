@@ -6,6 +6,7 @@ export interface CliFlags {
   config?: boolean;
   file?: string;
   speakers?: boolean;
+  nameSpeakers?: boolean;
   local?: boolean;
   engine?: string;
   language?: string;
@@ -20,6 +21,7 @@ export interface ResolvedOptions {
   manual: boolean;
   file?: string;
   diarize: boolean;
+  nameSpeakers: boolean;
   engine: Engine;
   language: LanguageCode;
   glossary: string;
@@ -61,7 +63,10 @@ export function resolveOptions(
   return {
     manual: flags.manual === true || flags.config === true,
     file: flags.file,
-    diarize: firstDefined(flags.speakers, parseBool(env[ENV_KEYS.SPEAKERS]), false),
+    diarize:
+      flags.nameSpeakers === true ||
+      firstDefined(flags.speakers, parseBool(env[ENV_KEYS.SPEAKERS]), false),
+    nameSpeakers: flags.nameSpeakers === true,
     engine: resolveEngine(flags, env, config),
     language: resolveLanguage(flags.language ?? env[ENV_KEYS.LANGUAGE], config),
     glossary: resolveGlossary(flags.glossary ?? env[ENV_KEYS.GLOSSARY], availableGlossaries),
