@@ -68,7 +68,7 @@ function groupBySpeaker(segments: DiarizedSegment[]): DiarizedSegment[][] {
   return turns;
 }
 
-function srtTime(seconds: number): string {
+export function srtTime(seconds: number): string {
   const total = Math.max(0, Math.round(seconds * 1000));
   const ms = total % 1000;
   const s = Math.floor(total / 1000) % 60;
