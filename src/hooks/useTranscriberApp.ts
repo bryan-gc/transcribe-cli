@@ -36,6 +36,9 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [clipboardEnabled, setClipboardEnabled] = useState(appConfig.autoCopy);
   const [wrapEnabled, setWrapEnabled] = useState(appConfig.wrapClipboard);
+  const [generalGlossaryEnabled, setGeneralGlossaryEnabled] = useState(
+    appConfig.useGeneralGlossary,
+  );
   const [activeEngine, setActiveEngine] = useState<Engine>(appConfig.engine);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
@@ -155,6 +158,14 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
           });
           break;
 
+        case MenuAction.TOGGLE_GENERAL_GLOSSARY:
+          setGeneralGlossaryEnabled((prev) => {
+            const newValue = !prev;
+            saveConfig({ useGeneralGlossary: newValue });
+            return newValue;
+          });
+          break;
+
         case MenuAction.TOGGLE_WRAP:
           setWrapEnabled((prev) => {
             const newValue = !prev;
@@ -176,7 +187,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
           const glossaryPrompt = readSelectedGlossaries(
             appConfig.basePath,
             activeGlossary,
-            appConfig.useGeneralGlossary,
+            generalGlossaryEnabled,
           );
           setIsTranscribing(true);
           setStatusText(
@@ -189,7 +200,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               textPath: currentTextPath,
               language: activeLanguage,
               glossary: glossaryPrompt,
-              glossaryName: glossaryMetaName(activeGlossary, appConfig.useGeneralGlossary),
+              glossaryName: glossaryMetaName(activeGlossary, generalGlossaryEnabled),
               metaPath: currentMetaPath,
               basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,
@@ -228,7 +239,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       recorder,
       exit,
       appConfig.basePath,
-      appConfig.useGeneralGlossary,
+      generalGlossaryEnabled,
       wrapEnabled,
       saveConfig,
     ],
@@ -245,6 +256,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       transcriptionResult,
       clipboardEnabled,
       wrapEnabled,
+      generalGlossaryEnabled,
       currentTextPath,
       activeLanguage,
       activeGlossary,

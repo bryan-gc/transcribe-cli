@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   GlossaryCommandError,
+  glossaryOptionLabel,
+  readGlossarySummary,
   runGlossaryCommand,
   summarizeGlossary,
 } from '../src/glossary/glossaryCommand.js';
@@ -94,4 +96,28 @@ test('comments do not count towards the summary', () => {
     tokens: 3,
     overBudget: false,
   });
+});
+
+test('picker labels show the size and warn when a glossary will be trimmed', () => {
+  assert.equal(
+    glossaryOptionLabel({ name: 'devops', lines: 2, tokens: 40, overBudget: false }),
+    'devops  (~40 tokens)',
+  );
+  assert.equal(
+    glossaryOptionLabel({ name: 'big', lines: 25, tokens: 708, overBudget: true }),
+    'big  (~708 tokens ⚠ trimmed)',
+  );
+});
+
+test('a summary can be read straight from the glossaries folder', async () => {
+  const { base, dir, deps } = setup();
+  await runGlossaryCommand(base, [], true, deps);
+  fs.writeFileSync(path.join(dir, 'devops.txt'), 'Kubernetes\n');
+  assert.deepEqual(readGlossarySummary(base, 'devops.txt'), {
+    name: 'devops',
+    lines: 1,
+    tokens: 4,
+    overBudget: false,
+  });
+  assert.equal(readGlossarySummary(base, 'missing.txt').lines, 0);
 });

@@ -55,6 +55,17 @@ export function summarizeGlossary(name: string, raw: string): GlossarySummary {
   return { name, lines: lines.length, tokens, overBudget: tokens > PROMPT_TOKEN_BUDGET };
 }
 
+export function readGlossarySummary(basePath: string, file: string): GlossarySummary {
+  const filePath = path.join(getPaths(basePath).GLOSSARIES_DIR, file);
+  const raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, Encoding.UTF8) : '';
+  return summarizeGlossary(glossaryNameOf(file)!, raw);
+}
+
+export function glossaryOptionLabel(summary: GlossarySummary): string {
+  const size = `~${summary.tokens} tokens${summary.overBudget ? ' ⚠ trimmed' : ''}`;
+  return `${summary.name}  (${size})`;
+}
+
 export function formatGlossaryList(summaries: GlossarySummary[]): string {
   const width = Math.max(...summaries.map((s) => s.name.length), 0);
   const rows = summaries.map((s) => {

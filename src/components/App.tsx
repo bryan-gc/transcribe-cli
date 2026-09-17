@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { glossarySelectionLabel } from '../utils/fileUtils.js';
+import { glossaryOptionLabel, readGlossarySummary } from '../glossary/glossaryCommand.js';
 import { Picker } from './Picker.js';
 import { PriorityPicker } from './PriorityPicker.js';
 import { MicTest } from './MicTest.js';
@@ -41,6 +42,7 @@ const MAIN_OPTIONS: MenuEntry[] = [
   { id: MenuAction.TRANSCRIBE, label: 'Transcribe', section: 'Actions' },
   { id: MenuAction.CHANGE_LANGUAGE, label: 'Language', section: 'Settings' },
   { id: MenuAction.CHANGE_GLOSSARY, label: 'Glossary', section: 'Settings' },
+  { id: MenuAction.TOGGLE_GENERAL_GLOSSARY, label: 'General glossary', section: 'Settings' },
   { id: MenuAction.CHANGE_MICROPHONE, label: 'Microphone', section: 'Settings' },
   { id: MenuAction.CHANGE_ENGINE, label: 'Engine', section: 'Settings' },
   { id: MenuAction.TOGGLE_CLIPBOARD, label: 'Clipboard', section: 'Settings' },
@@ -63,6 +65,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     transcriptionResult,
     clipboardEnabled,
     wrapEnabled,
+    generalGlossaryEnabled,
     currentTextPath,
     activeLanguage,
     activeGlossary,
@@ -124,6 +127,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
   const settingValues: Partial<Record<MenuAction, string>> = {
     [MenuAction.CHANGE_LANGUAGE]: LANGUAGE_NAMES[activeLanguage],
     [MenuAction.CHANGE_GLOSSARY]: glossaryLabel,
+    [MenuAction.TOGGLE_GENERAL_GLOSSARY]: generalGlossaryEnabled ? 'On' : 'Off',
     [MenuAction.CHANGE_MICROPHONE]: micSummary,
     [MenuAction.CHANGE_ENGINE]: engineField(activeEngine, null).value,
     [MenuAction.TOGGLE_CLIPBOARD]: clipboardEnabled ? 'On' : 'Off',
@@ -137,7 +141,10 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
 
   const glossaryOptions = [
     { label: '(none)', value: NONE_OPTION_VALUE },
-    ...glossaryFiles.map((f) => ({ label: path.basename(f, EXT.GLOSSARY), value: f })),
+    ...glossaryFiles.map((f) => ({
+      label: glossaryOptionLabel(readGlossarySummary(appConfig.basePath, f)),
+      value: f,
+    })),
   ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -149,7 +156,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
         isBusy={isRecording || isTranscribing}
         fields={[
           languageField(activeLanguage),
-          glossaryField(glossarySelectionLabel(activeGlossary, appConfig.useGeneralGlossary)),
+          glossaryField(glossarySelectionLabel(activeGlossary, generalGlossaryEnabled)),
           { label: 'Microphone', value: activeMic.label },
           engineField(appConfig.engine, null),
           clipboardField(clipboardEnabled, null, wrapEnabled),
@@ -172,7 +179,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
                 )}
                 <Text color={i === selectedIndex ? 'cyan' : undefined}>
                   {i === selectedIndex ? '> ' : '  '}
-                  {`${opt.label} [${opt.id}]`.padEnd(20)}
+                  {`${opt.label} [${opt.id}]`.padEnd(24)}
                   <Text color="magenta">{settingValues[opt.id] ?? ''}</Text>
                 </Text>
               </Box>
@@ -246,6 +253,12 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
           }}
           onCancel={() => setViewMode(ViewMode.MAIN)}
         />
+      )}
+      {viewMode === ViewMode.GLOSSARIES && (
+        <Text dimColor>
+          Edit one with: transcribe-cli glossary edit &lt;name&gt; · create: transcribe-cli glossary
+          new &lt;name&gt;
+        </Text>
       )}
 
       {/* ── Microphone Priority ── */}
