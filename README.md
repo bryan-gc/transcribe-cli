@@ -187,6 +187,25 @@ Recordings are never deleted: the audio stays next to its transcript, grouped by
 versions kept everything in a `tmp/` folder; if you have one, the first run after updating moves it
 into `transcriptions/recorded/` on its own, without touching a file it would have to overwrite.
 
+### What Gets Copied
+
+Copied transcripts are wrapped in a short notice, in the language of the audio, so whoever you paste
+them to — a person or an assistant — knows the text is unreviewed speech to text:
+
+```text
+[AUTOMATIC TRANSCRIPTION — speech to text, unreviewed. It may contain wrong words, misspelled names or cut-off sentences; read with judgement.]
+
+…the transcript…
+
+[END OF TRANSCRIPTION]
+[Glossary used as a spelling reference: Kubernetes, Terraform]
+```
+
+Speaker-labelled runs add a line saying the labels may be wrong, and audio over ten minutes adds its
+length. The saved `.txt` is never wrapped. The notice is on by default: turn it off for one run with
+`--no-wrap` or `TRANSCRIBE_WRAP=0`, or for good with **Copy notice** in `transcribe-cli -c`
+(key `w`).
+
 ### Glossaries
 
 A glossary is a plain `.txt` in `glossaries/`: one term, name or short phrase per line, or a
@@ -223,6 +242,7 @@ If the engine you picked is not usable at all — no API key, or WhisperX not in
 | `--engine <name>` | `openai` or `local`, the long form of `--local` |
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |
 | `-g, --glossary <name>` | Glossary to use as context, with or without the `.txt` |
+| `--no-wrap` | Copy the bare text, without the automatic-transcription notice |
 | `--no-copy` | Do not copy the result to the clipboard on this run |
 | `-y, --yes` | Skip the cost confirmation shown for long audio files (`TRANSCRIBE_YES=1` does the same) |
 | `-v, --version` | Output the current version |
@@ -268,7 +288,7 @@ Speaker labels are not available locally yet; `--local --speakers` says so rathe
 dropping them.
 
 Options are also read from the environment, which is handy in a shell alias:
-`TRANSCRIBE_LANGUAGE`, `TRANSCRIBE_GLOSSARY`, `TRANSCRIBE_COPY`.
+`TRANSCRIBE_LANGUAGE`, `TRANSCRIBE_GLOSSARY`, `TRANSCRIBE_COPY`, `TRANSCRIBE_WRAP`.
 
 Where the same option is set in more than one place, the most specific one wins:
 

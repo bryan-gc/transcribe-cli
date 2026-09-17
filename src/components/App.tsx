@@ -43,6 +43,7 @@ const MAIN_OPTIONS: MenuEntry[] = [
   { id: MenuAction.CHANGE_MICROPHONE, label: 'Microphone', section: 'Settings' },
   { id: MenuAction.CHANGE_ENGINE, label: 'Engine', section: 'Settings' },
   { id: MenuAction.TOGGLE_CLIPBOARD, label: 'Clipboard', section: 'Settings' },
+  { id: MenuAction.TOGGLE_WRAP, label: 'Copy notice', section: 'Settings' },
   { id: MenuAction.QUIT, label: 'Quit', section: '' },
 ];
 
@@ -60,6 +61,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     isTranscribing,
     transcriptionResult,
     clipboardEnabled,
+    wrapEnabled,
     currentTextPath,
     activeLanguage,
     activeGlossary,
@@ -124,6 +126,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
     [MenuAction.CHANGE_MICROPHONE]: micSummary,
     [MenuAction.CHANGE_ENGINE]: engineField(activeEngine, null).value,
     [MenuAction.TOGGLE_CLIPBOARD]: clipboardEnabled ? 'On' : 'Off',
+    [MenuAction.TOGGLE_WRAP]: wrapEnabled ? 'On' : 'Off',
   };
 
   const languageOptions = AVAILABLE_LANGUAGES.map((lang) => ({
@@ -148,7 +151,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
           glossaryField(glossaryLabel),
           { label: 'Microphone', value: activeMic.label },
           engineField(appConfig.engine, null),
-          clipboardField(clipboardEnabled, null),
+          clipboardField(clipboardEnabled, null, wrapEnabled),
         ]}
       />
 

@@ -235,6 +235,7 @@ export enum MenuAction {
   CHANGE_GLOSSARY = 'g',
   CHANGE_MICROPHONE = 'm',
   TOGGLE_CLIPBOARD = 'c',
+  TOGGLE_WRAP = 'w',
   QUIT = 'q',
 }
 

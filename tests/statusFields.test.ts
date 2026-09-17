@@ -88,3 +88,12 @@ test('the glossary field says when the glossary was trimmed or not used', () => 
   );
   assert.equal(glossaryField('(none)', null).value, '(none)');
 });
+
+test('the clipboard field says when copies carry the transcription notice', () => {
+  assert.equal(clipboardField(true, null, true).value, 'On · marked');
+  assert.equal(
+    clipboardField(true, run({ clipboard: ClipboardOutcome.COPIED }), true).value,
+    'Copied · marked',
+  );
+  assert.equal(clipboardField(false, null, true).value, 'Off');
+});

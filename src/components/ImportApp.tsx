@@ -82,7 +82,7 @@ export function ImportApp({
           ...audioLengthField(lastRun),
           ...tookField(lastRun),
           ...costField(lastRun),
-          clipboardField(appConfig.autoCopy, lastRun),
+          clipboardField(appConfig.autoCopy, lastRun, appConfig.wrapClipboard),
         ]}
       />
 

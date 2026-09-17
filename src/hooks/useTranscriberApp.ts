@@ -35,6 +35,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState('');
   const [clipboardEnabled, setClipboardEnabled] = useState(appConfig.autoCopy);
+  const [wrapEnabled, setWrapEnabled] = useState(appConfig.wrapClipboard);
   const [activeEngine, setActiveEngine] = useState<Engine>(appConfig.engine);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
@@ -154,6 +155,14 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
           });
           break;
 
+        case MenuAction.TOGGLE_WRAP:
+          setWrapEnabled((prev) => {
+            const newValue = !prev;
+            saveConfig({ wrapClipboard: newValue });
+            return newValue;
+          });
+          break;
+
         case MenuAction.TRANSCRIBE: {
           if (isRecording) {
             setStatusText('Please stop the recording before transcribing.');
@@ -181,7 +190,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
               basePath: appConfig.basePath,
               source: RecordingKind.RECORDED,
               copyToClipboard: clipboardEnabled,
-              wrap: appConfig.wrapClipboard,
+              wrap: wrapEnabled,
               onProgress: (msg) => setStatusText(`⏳ ${msg}`),
             });
 
@@ -215,7 +224,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       recorder,
       exit,
       appConfig.basePath,
-      appConfig.wrapClipboard,
+      wrapEnabled,
       saveConfig,
     ],
   );
@@ -230,6 +239,7 @@ export function useTranscriberApp(appConfig: AppConfig, exit: () => void) {
       isTranscribing,
       transcriptionResult,
       clipboardEnabled,
+      wrapEnabled,
       currentTextPath,
       activeLanguage,
       activeGlossary,

@@ -73,15 +73,20 @@ export function audioLengthField(run: TranscriptionOutcome | null): StatusField[
     : [{ label: 'Audio', value: formatDuration(seconds * 1000), tone: 'dim' }];
 }
 
-export function clipboardField(enabled: boolean, run: TranscriptionOutcome | null): StatusField {
+export function clipboardField(
+  enabled: boolean,
+  run: TranscriptionOutcome | null,
+  marked = false,
+): StatusField {
+  const notice = marked ? ' · marked' : '';
   if (run?.clipboard === ClipboardOutcome.COPIED) {
-    return { label: 'Clipboard', value: 'Copied', tone: 'good' };
+    return { label: 'Clipboard', value: `Copied${notice}`, tone: 'good' };
   }
   if (run?.clipboard === ClipboardOutcome.FAILED) {
     return { label: 'Clipboard', value: `Failed — ${run.clipboardError ?? ''}`, tone: 'bad' };
   }
   return enabled
-    ? { label: 'Clipboard', value: 'On', tone: 'good' }
+    ? { label: 'Clipboard', value: `On${notice}`, tone: 'good' }
     : { label: 'Clipboard', value: 'Off', tone: 'dim' };
 }
 
