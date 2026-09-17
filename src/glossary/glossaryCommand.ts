@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { openInEditor } from '../system/editor.js';
+import { formatCandidates, GENERAL_NAME, suggestCandidates } from './candidates.js';
 import {
   ensureGeneralGlossary,
   glossaryNameOf,
@@ -15,7 +16,7 @@ import {
 } from '../utils/glossaryPrompt.js';
 import { Encoding, EXT, GENERAL_GLOSSARY, getPaths } from '../constants.js';
 
-export const GLOSSARY_SUBCOMMANDS = ['edit', 'new', 'show'] as const;
+export const GLOSSARY_SUBCOMMANDS = ['edit', 'new', 'show', 'suggest'] as const;
 
 const VALID_NAME = /^[\p{L}\p{N}_-]+$/u;
 
@@ -112,6 +113,15 @@ export async function runGlossaryCommand(
       );
     }
     return editAndSummarize(file, deps);
+  }
+
+  if (sub === 'suggest') {
+    const target = name ? path.basename(fileFor(dir, name), EXT.GLOSSARY) : GENERAL_NAME;
+    if (target !== GENERAL_NAME && !fs.existsSync(fileFor(dir, target))) {
+      throw new GlossaryCommandError(`No glossary called ${target}.`);
+    }
+    deps.write(`${formatCandidates(target, suggestCandidates(basePath, target))}\n`);
+    return 0;
   }
 
   if (sub === 'show') {
