@@ -24,7 +24,11 @@ export class MockTranscriber implements ITranscriber {
     this.index += 1;
     if (outcome instanceof Error) throw outcome;
 
-    const base = { engine: MOCK_ENGINE, model: MOCK_MODEL };
+    const base = {
+      engine: MOCK_ENGINE,
+      model: MOCK_MODEL,
+      promptApplied: !options.diarize && Boolean(options.prompt),
+    };
     return options.diarize
       ? { ...base, raw: outcome, segments: parseDiarized(outcome) }
       : { ...base, raw: outcome };

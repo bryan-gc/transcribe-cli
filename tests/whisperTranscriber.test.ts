@@ -63,6 +63,31 @@ test('forwards the glossary as the prompt when there is one', async () => {
   assert.equal(seen[0]!.form?.get('prompt'), 'Kubernetes, Terraform');
 });
 
+test('the diarize model never receives the glossary, since it does not accept a prompt', async () => {
+  const { impl, seen } = stubFetch('{"text":"hola","segments":[]}');
+  const result = await new WhisperTranscriber('sk-test', impl).transcribe({
+    audioFilePath: tempAudio(),
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.SRT,
+    diarize: true,
+    prompt: 'Kubernetes, Terraform',
+  });
+  assert.equal(seen[0]!.form?.has('prompt'), false);
+  assert.equal(result.promptApplied, false);
+});
+
+test('reports the glossary as applied only when it was actually sent', async () => {
+  const { impl } = stubFetch('text');
+  const transcriber = new WhisperTranscriber('sk-test', impl);
+  const base = {
+    audioFilePath: tempAudio(),
+    language: LanguageCode.ENGLISH,
+    format: TranscriptionFormat.TEXT,
+  };
+  assert.equal((await transcriber.transcribe({ ...base, prompt: 'Grafana' })).promptApplied, true);
+  assert.equal((await transcriber.transcribe(base)).promptApplied, false);
+});
+
 test('a missing audio file fails before anything is sent', async () => {
   const { impl, seen } = stubFetch('text');
   await assert.rejects(

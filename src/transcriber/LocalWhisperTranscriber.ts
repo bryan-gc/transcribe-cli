@@ -40,6 +40,7 @@ export class LocalWhisperTranscriber implements ITranscriber {
         raw: fs.readFileSync(path.join(outputDir, written), Encoding.UTF8),
         engine: Engine.LOCAL,
         model: this.config.model,
+        promptApplied: false,
       };
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });

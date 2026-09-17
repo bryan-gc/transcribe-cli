@@ -28,6 +28,7 @@ export interface TranscriptionResult {
   engine: string;
   model: string;
   usage?: TranscriptionUsage;
+  promptApplied: boolean;
 }
 
 export interface ITranscriber {

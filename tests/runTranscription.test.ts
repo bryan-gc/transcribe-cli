@@ -80,6 +80,23 @@ test('the glossary and language reach the transcriber', async () => {
   assert.equal(transcriber.calls[0]!.language, LanguageCode.GERMAN);
 });
 
+test('an oversized glossary is trimmed before it reaches the transcriber, and the outcome says so', async () => {
+  const transcriber = new MockTranscriber(SRT);
+  const lines = Array.from({ length: 40 }, (_, i) => `invented term ${i} used only in this test`);
+  const outcome = await runTranscription(transcriber, job({ glossary: lines.join('\n') }));
+  const sent = transcriber.calls[0]!.prompt!;
+  assert.ok(sent.endsWith(lines.at(-1)!));
+  assert.ok(!sent.includes(lines[0]!));
+  assert.equal(outcome.glossaryPrompt?.trimmed, true);
+  assert.equal(outcome.glossaryApplied, true);
+});
+
+test('comments in the glossary file are not sent', async () => {
+  const transcriber = new MockTranscriber(SRT);
+  await runTranscription(transcriber, job({ glossary: '# header\nGrafana' }));
+  assert.equal(transcriber.calls[0]!.prompt, 'Grafana');
+});
+
 test('an unauthorized response says what to do instead of naming a status code', () => {
   const message = describeTranscriptionError(
     Object.assign(new Error('401 whatever'), { status: 401 }),

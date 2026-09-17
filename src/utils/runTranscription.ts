@@ -7,6 +7,7 @@ import { extractTextFromSrt } from './srtParser.js';
 import { buildSrtFromDiarized, formatDiarized } from './diarizedParser.js';
 import { copyTextToClipboard } from './clipboard.js';
 import { appendUsage } from './usageLog.js';
+import { buildGlossaryPrompt, type GlossaryPrompt } from './glossaryPrompt.js';
 import type { LanguageCode } from '../constants.js';
 import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
 
@@ -40,6 +41,8 @@ export interface TranscriptionOutcome {
   tookMs: number;
   usage?: TranscriptionUsage;
   meta: TranscriptionMeta;
+  glossaryPrompt?: GlossaryPrompt;
+  glossaryApplied: boolean;
 }
 
 export async function runTranscription(
@@ -51,11 +54,12 @@ export async function runTranscription(
   }
 
   const startedAt = Date.now();
+  const glossaryPrompt = buildGlossaryPrompt(job.glossary);
   const result = await transcriber.transcribe({
     audioFilePath: job.audioPath,
     language: job.language,
     format: TranscriptionFormat.SRT,
-    prompt: job.glossary,
+    prompt: glossaryPrompt?.text,
     diarize: job.diarize,
     onProgress: job.onProgress,
   });
@@ -94,6 +98,8 @@ export async function runTranscription(
     tookMs: meta.tookMs,
     usage: result.usage,
     meta,
+    glossaryPrompt,
+    glossaryApplied: result.promptApplied,
   };
 
   if (!job.copyToClipboard) return { ...base, clipboard: ClipboardOutcome.OFF };

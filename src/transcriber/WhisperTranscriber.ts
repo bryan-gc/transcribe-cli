@@ -47,6 +47,7 @@ export class WhisperTranscriber implements ITranscriber {
     }
 
     const diarize = options.diarize === true;
+    const sendPrompt = !diarize && Boolean(options.prompt);
     options.onProgress?.('Preparing audio stream...');
     const fileStream = fs.createReadStream(options.audioFilePath);
 
@@ -62,14 +63,19 @@ export class WhisperTranscriber implements ITranscriber {
       language: options.language,
       response_format: diarize ? TranscriptionFormat.DIARIZED : options.format,
       ...(diarize ? { chunking_strategy: DIARIZE_CHUNKING } : {}),
-      ...(options.prompt ? { prompt: options.prompt } : {}),
+      ...(sendPrompt ? { prompt: options.prompt } : {}),
     });
 
     options.onProgress?.('Response received from OpenAI.');
 
     const model = diarize ? DIARIZE_MODEL : WHISPER_MODEL;
     if (!diarize) {
-      return { raw: response as unknown as string, engine: Engine.OPENAI, model };
+      return {
+        raw: response as unknown as string,
+        engine: Engine.OPENAI,
+        model,
+        promptApplied: sendPrompt,
+      };
     }
 
     const raw = typeof response === 'string' ? response : JSON.stringify(response);
@@ -79,6 +85,7 @@ export class WhisperTranscriber implements ITranscriber {
       engine: Engine.OPENAI,
       model,
       usage: readUsage(response),
+      promptApplied: false,
     };
   }
 }
