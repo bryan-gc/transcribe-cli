@@ -33,6 +33,7 @@ export const MIN_DOCS = 2;
 export const MIN_TOKEN_LENGTH = 3;
 export const RECENT_DAYS = 30;
 export const DEFAULT_LIMIT = 30;
+export const USAGE_WEIGHT = 0.5;
 export const CAPITALIZED_SHARE = 0.6;
 export const TOPIC_SHARE = 0.8;
 const EXAMPLE_RADIUS = 36;
@@ -123,7 +124,6 @@ export function extractCandidates(docs: Doc[], options: ExtractOptions = {}): Ca
     if (options.topic !== undefined && stat.topicDocs.size === 0) continue;
 
     const term = mostFrequentForm(stat.forms);
-    const idf = Math.log(total / stat.docs.size) / Math.log(total + 1);
     const topicShare = options.topic !== undefined ? stat.topicDocs.size / stat.docs.size : 0;
     const distinctive =
       options.topic !== undefined ? topicShare >= TOPIC_SHARE && topicTotal < total : false;
@@ -138,7 +138,7 @@ export function extractCandidates(docs: Doc[], options: ExtractOptions = {}): Ca
     if (reasons.length === 0) continue;
 
     const base =
-      idf +
+      Math.log2(1 + stat.docs.size) * USAGE_WEIGHT +
       (distinctive ? topicShare : 0) +
       (reasons.includes('capitalized') ? 1 : 0) +
       (reasons.includes('shape') ? 1 : 0) +
