@@ -1,0 +1,4 @@
+env = "exec"
+
+[secrets]
+OPENAI_API_KEY = { provider = "secrets", value = "openai-personal" }
