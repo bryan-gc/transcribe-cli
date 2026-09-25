@@ -34,7 +34,6 @@ test('a local run is free, and says so rather than guessing', () => {
   assert.equal(cost.estimated, false, 'nothing was charged, so nothing is being estimated');
 });
 
-// An absent field breaks a jq that sums the month; an explicit zero adds up fine.
 test('the cost is always present, never omitted', () => {
   const meta = buildMeta({
     source: RecordingKind.RECORDED,

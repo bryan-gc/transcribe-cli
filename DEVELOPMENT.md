@@ -73,7 +73,7 @@ npm version patch
 ```bash
 git push --follow-tags
 ```
-*(El flag `--follow-tags` empuja tanto tus commits (el código) como el nuevo tag que `npm version` acaba de crear. Al llegar el tag a GitHub, se dispara inmediatamente nuestro archivo `publish.yml`).*
+*(`--follow-tags` pushes both your commits and the tag `npm version` just created. As soon as the tag reaches GitHub, `publish.yml` runs.)*
 
 4. **Monitor the Action in GitHub**:
 Go to your repository on GitHub.com and click the **Actions** tab. You will see a workflow running. Once it finishes (it usually takes around 1 minute), your new version will be live on NPM with the Provenance badge.

@@ -358,6 +358,9 @@ The installer does not touch your system Python or any packages other projects d
 `engine` to `local` in `~/.transcribe-cli/config.json` to make it the default, in which case no API
 key is needed at all.
 
+The virtualenv goes to `~/.transcribe-cli/venv-whisperx`; pass a path to put it somewhere else:
+`./scripts/install-whisperx.sh ~/venvs/whisperx`.
+
 Speaker labels are not available locally yet; `--local --speakers` says so rather than quietly
 dropping them.
 

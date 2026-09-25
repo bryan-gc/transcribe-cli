@@ -1,14 +1,4 @@
 #!/usr/bin/env bash
-# Installs WhisperX into a dedicated virtualenv for the local transcription engine.
-#
-# A virtualenv rather than a system-wide install, for two reasons:
-#   - Ubuntu's system Python is PEP 668 managed: pip refuses to write to it without
-#     --break-system-packages, and overriding that is how a working Python gets broken.
-#   - This machine already has a CUDA torch build installed globally that other projects
-#     depend on. Installing WhisperX system-wide can move that version underneath them.
-#
-# Usage:  ./scripts/install-whisperx.sh [venv-path]
-# Default venv: ~/.transcribe-cli/venv-whisperx
 
 set -euo pipefail
 
@@ -29,9 +19,6 @@ read -r major minor <<<"$(python3 -c 'import sys; print(sys.version_info.major, 
 
 info "Python $major.$minor, ffmpeg $(ffmpeg -version | head -1 | cut -d' ' -f3)"
 
-# A venv is only usable if it has its own pip. A directory left behind by an interrupted or
-# failed run looks like a venv but has no pip, and reusing it fails much later with a confusing
-# error, so treat anything without pip as absent.
 if [ -x "$VENV/bin/pip" ]; then
   info "Reusing virtualenv at $VENV"
 else
@@ -47,9 +34,6 @@ else
     info "No ensurepip, but virtualenv is available"
     virtualenv --quiet "$VENV"
   else
-    # Debian and Ubuntu ship the standard library without ensurepip: it lives in a separate
-    # package. There is no way around that from inside this script, and installing packages on
-    # someone's behalf is not this script's job, so say exactly what to run and stop.
     cat >&2 <<MSG
 
 This Python cannot create virtualenvs: it has no ensurepip, which Debian and Ubuntu
