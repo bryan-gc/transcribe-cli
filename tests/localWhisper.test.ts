@@ -71,6 +71,15 @@ test('the glossary goes to whisperx as hotwords, and nothing is added without on
   assert.ok(!buildArgs(local, options, '/tmp/out').includes('--hotwords'));
 });
 
+test('a glossary with one term per line reaches whisperx as a single comma-separated line', () => {
+  const args = buildArgs(
+    local,
+    { ...options, prompt: 'PDF\nOpenAI\n\nActivity Book\n' },
+    '/tmp/out',
+  );
+  assert.equal(valueAfter(args, '--hotwords'), 'PDF, OpenAI, Activity Book');
+});
+
 test('sentence resolution is always requested', () => {
   assert.equal(
     valueAfter(buildArgs(local, options, '/tmp/out'), '--segment_resolution'),

@@ -116,6 +116,14 @@ export function buildArgs(
     outputDir,
     '--print_progress',
     'True',
-    ...(options.prompt ? ['--hotwords', options.prompt] : []),
+    ...(options.prompt ? ['--hotwords', hotwords(options.prompt)] : []),
   ];
+}
+
+function hotwords(prompt: string): string {
+  return prompt
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(', ');
 }
