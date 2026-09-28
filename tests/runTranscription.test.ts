@@ -12,7 +12,7 @@ import {
 } from '../src/utils/runTranscription.js';
 import { MockTranscriber } from '../src/transcriber/MockTranscriber.js';
 import { GlossaryLearning } from '../src/glossary/learnGlossary.js';
-import { LanguageCode } from '../src/constants.js';
+import { LanguageCode, RecordingKind } from '../src/constants.js';
 
 const SRT = '1\n00:00:00,000 --> 00:00:01,000\nhola que tal\n';
 
@@ -25,6 +25,7 @@ function job(over: Partial<TranscriptionJob> = {}): TranscriptionJob {
     srtPath: path.join(dir, 'audio.srt'),
     textPath: path.join(dir, 'audio.txt'),
     language: LanguageCode.SPANISH,
+    source: RecordingKind.RECORDED,
     copyToClipboard: false,
     ...over,
   };
@@ -145,6 +146,13 @@ test('the status distinguishes copied from merely enabled', () => {
     describeOutcome({ text: 'x', clipboard: ClipboardOutcome.OFF }),
     /clipboard/i,
   );
+});
+
+test('the meta file says whether the audio was recorded or imported with -f', async () => {
+  const j = job({ source: RecordingKind.IMPORTED });
+  const metaPath = j.textPath.replace(/\.txt$/, '.meta.json');
+  await runTranscription(new MockTranscriber(SRT), { ...j, metaPath });
+  assert.equal(JSON.parse(fs.readFileSync(metaPath, 'utf8')).source, 'imported');
 });
 
 test('the meta records which glossary was used and whether it was trimmed', async () => {

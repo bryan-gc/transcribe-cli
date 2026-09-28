@@ -187,6 +187,19 @@ Recordings are never deleted: the audio stays next to its transcript, grouped by
 versions kept everything in a `tmp/` folder; if you have one, the first run after updating moves it
 into `transcriptions/recorded/` on its own, without touching a file it would have to overwrite.
 
+#### Recorded or imported
+
+Each transcription says how the tool was used to get it, in the `source` field of its `.meta.json`
+and of its line in `usage.jsonl`, and by the folder it sits in:
+
+- `recorded`: captured from the microphone by `transcribe-cli` itself. It is what the microphone
+  heard, not only your voice: anyone speaking nearby is in it too.
+- `imported`: an audio file passed with `-f`, whoever is speaking in it. That includes your own
+  voice notes, and a recording of this tool transcribed again with `-f`.
+
+The field exists since 1.1.0 (2026-09-07). Transcripts from before that have no `.meta.json`; they
+are all in `recorded/`, because importing files did not exist yet, so the folder is their answer.
+
 ### What Gets Copied
 
 Copied transcripts are wrapped in a short notice, in the language of the audio, so whoever you paste
