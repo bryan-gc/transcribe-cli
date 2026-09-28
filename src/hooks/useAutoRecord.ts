@@ -13,7 +13,14 @@ import type { AppConfig } from '../config/configManager.js';
 import { resolveMicDevice } from '../audio/micDevices.js';
 import { getTimestampPaths, readSelectedGlossaries, glossaryMetaName } from '../utils/fileUtils.js';
 import { RecordingClock, formatClock } from '../utils/recordingClock.js';
-import { estimateRun, formatEstimatedCost, formatEstimatedTime } from '../utils/estimate.js';
+import {
+  estimateRun,
+  formatEstimatedCost,
+  formatEstimatedTime,
+  type EngineChoice,
+} from '../utils/estimate.js';
+import { buildPreflight, type Preflight } from '../utils/preflight.js';
+import { audioDurationSeconds } from '../audio/audioDuration.js';
 import { measuredSpeed, readRecentMeta } from '../utils/history.js';
 import { Engine } from '../config/configManager.js';
 import {
@@ -40,6 +47,7 @@ export function useAutoRecord(
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [stalledAfterResume, setStalledAfterResume] = useState(false);
+  const [retryMenu, setRetryMenu] = useState<Preflight | null>(null);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
   const [currentSrtPath, setCurrentSrtPath] = useState('');
@@ -152,8 +160,12 @@ export function useAutoRecord(
     return `   ·   ${formatEstimatedCost(api.cost)} with ${api.model}   ·   ${formatEstimatedTime(local)} locally`;
   };
 
-  const transcribe = async () => {
-    if (!transcriberRef.current) return;
+  const transcribe = async (choice?: EngineChoice) => {
+    const transcriber = choice
+      ? createTranscriber({ ...appConfig, engine: choice.engine })
+      : transcriberRef.current;
+    if (!transcriber) return;
+    const withSpeakers = choice?.diarize ?? diarize;
 
     const glossaryPrompt = readSelectedGlossaries(
       appConfig.basePath,
@@ -163,18 +175,18 @@ export function useAutoRecord(
     setIsTranscribing(true);
     setFailure(null);
     setStatusText(
-      `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}${diarize ? ' + speakers' : ''})...`,
+      `⏳ Transcribing (${LANGUAGE_NAMES[activeLanguage]}${glossaryPrompt ? ' + glossary' : ''}${withSpeakers ? ' + speakers' : ''})...`,
     );
 
     try {
-      const outcome = await runTranscription(transcriberRef.current, {
+      const outcome = await runTranscription(transcriber, {
         audioPath: currentAudioPath,
         srtPath: currentSrtPath,
         textPath: currentTextPath,
         language: activeLanguage,
         glossary: glossaryPrompt,
         glossaryName: glossaryMetaName(activeGlossary, appConfig.useGeneralGlossary),
-        diarize,
+        diarize: withSpeakers,
         diarizedPath: currentDiarizedPath,
         metaPath: currentMetaPath,
         basePath: appConfig.basePath,
@@ -192,7 +204,14 @@ export function useAutoRecord(
       setTimeout(exit, 500);
     } catch (err: unknown) {
       setFailure(describeTranscriptionError(err));
-      setStatusText('❌ Transcription failed.');
+      setStatusText('❌ Transcription failed. Pick an engine to try again.');
+      setRetryMenu(
+        buildPreflight(
+          audioDurationSeconds(currentAudioPath) ?? elapsedSeconds,
+          { engine: appConfig.engine, diarize },
+          appConfig,
+        ),
+      );
     } finally {
       setIsTranscribing(false);
     }
@@ -244,11 +263,20 @@ export function useAutoRecord(
       activeMic,
       activeGlossary,
       currentTextPath,
+      retryMenu,
     },
     actions: {
       handleStopAndTranscribe,
       togglePause,
-      retry: transcribe,
+      selectRetry: (selected: number) => {
+        setRetryMenu((menu) => (menu ? { ...menu, selected } : menu));
+      },
+      confirmRetry: () => {
+        if (!retryMenu) return;
+        const row = retryMenu.rows[retryMenu.selected];
+        setRetryMenu(null);
+        void transcribe({ engine: row.engine, diarize: row.diarize });
+      },
       forceStop,
     },
   };

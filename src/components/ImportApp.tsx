@@ -6,6 +6,7 @@ import { PreflightPrompt } from './PreflightPrompt.js';
 import { SpeakerNaming } from './SpeakerNaming.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
+import type { RetryTarget } from '../utils/retryTarget.js';
 import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
 import {
   clipboardField,
@@ -26,6 +27,7 @@ export function ImportApp({
   confirmLongAudio,
   nameSpeakers = false,
   aside = false,
+  retryOf,
 }: {
   appConfig: AppConfig;
   filePath: string;
@@ -34,6 +36,7 @@ export function ImportApp({
   confirmLongAudio: boolean;
   nameSpeakers?: boolean;
   aside?: boolean;
+  retryOf?: RetryTarget;
 }) {
   const { exit } = useApp();
   const { state, actions } = useImportTranscribe(
@@ -45,6 +48,7 @@ export function ImportApp({
     nameSpeakers,
     aside,
     exit,
+    retryOf,
   );
 
   const {
@@ -59,8 +63,8 @@ export function ImportApp({
     sourceName,
     audioPath,
     textPath,
-    canRetry,
     naming,
+    isRetry,
   } = state;
 
   useInput(
@@ -69,8 +73,7 @@ export function ImportApp({
         exit();
         return;
       }
-      if (input.toLowerCase() === ActionHotkey.CANCEL_Q) exit();
-      if (canRetry && input.toLowerCase() === ActionHotkey.RECORD) actions.retry();
+      if (preflight === null && input.toLowerCase() === ActionHotkey.CANCEL_Q) exit();
     },
     { isActive: failure !== null && !isTranscribing },
   );
@@ -80,7 +83,7 @@ export function ImportApp({
   return (
     <Box flexDirection="column" padding={1}>
       <Header
-        title="=== transcribe-cli (Import) ==="
+        title={`=== transcribe-cli (${isRetry ? 'Retry' : 'Import'}) ===`}
         statusText={statusText}
         isBusy={isTranscribing}
         fields={[
@@ -105,6 +108,14 @@ export function ImportApp({
         />
       )}
 
+      {failure !== null && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text color="red">{failure}</Text>
+          {audioPath !== '' && <Text dimColor>Audio saved at {audioPath}</Text>}
+          {preflight === null && <Text>Press [{ActionHotkey.CANCEL_Q}] to quit</Text>}
+        </Box>
+      )}
+
       {preflight !== null && (
         <PreflightPrompt
           audioSeconds={preflight.audioSeconds}
@@ -114,17 +125,6 @@ export function ImportApp({
           onConfirm={actions.confirmPreflight}
           onCancel={exit}
         />
-      )}
-
-      {failure !== null && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color="red">{failure}</Text>
-          {audioPath !== '' && <Text dimColor>Audio saved at {audioPath}</Text>}
-          <Text>
-            {canRetry ? `Press [${ActionHotkey.RECORD}] to retry · ` : ''}[{ActionHotkey.CANCEL_Q}]
-            to quit
-          </Text>
-        </Box>
       )}
 
       {transcriptionResult !== '' && (

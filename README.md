@@ -20,7 +20,8 @@ machine with WhisperX — your choice, per run or as a default.
 - **`transcribe-cli usage`** to add it all up by day and by engine.
 - **`transcribe-cli doctor`** to tell you what is missing, per capability, with the exact command
   to install it.
-- **Retry without losing the audio** if a transcription fails.
+- **Retry without losing the audio** if a transcription fails, picking the engine, and
+  `transcribe-cli retry` for one that came back wrong.
 - **Five languages**: `es`, `en`, `pt`, `fr`, `de`.
 
 ## System Requirements
@@ -319,7 +320,25 @@ transcribe-cli speakers path/to/transcript.txt A=Ana B=Luis # rename directly
 ### When a Transcription Fails
 
 The audio is written to disk before anything is sent, so a failure never costs you the recording.
-The tool stays open and offers `[r]` to retry the transcription on the audio it already has.
+The tool stays open and lists the engines with what each would cost and take, your default one
+selected: `[Enter]` tries again with it, `[e]` moves to the next, `[q]` quits.
+
+### Transcribing the Last One Again
+
+When a transcription comes back but is wrong — words that were never said, another alphabet, a
+sentence repeated — run it again on the same audio, with the engine you choose:
+
+```bash
+transcribe-cli retry                    # the last recording or import, with your default engine
+transcribe-cli retry --local            # the same, on this machine
+transcribe-cli retry -s                 # the same, with speaker labels
+transcribe-cli retry path/to/00-57-32.txt   # an older one: its .txt, .meta.json or audio
+```
+
+It replaces the `.txt`, `.srt` and `.meta.json` next to that audio, keeps it recorded or imported
+and aside if it was, copies the result as usual, and adds the run to `usage.jsonl`. Nothing is
+copied into `imported/`. Every flag works as on a normal run; what is not given comes from your
+configuration.
 
 If the engine you picked is not usable at all — no API key, or WhisperX not installed — it says so
 **before** opening the microphone, so you do not record into a dead end.

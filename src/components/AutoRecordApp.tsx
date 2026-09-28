@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import { glossarySelectionLabel } from '../utils/fileUtils.js';
 import { Header } from './Header.js';
+import { PreflightPrompt } from './PreflightPrompt.js';
 import { useAutoRecord } from '../hooks/useAutoRecord.js';
 import type { AppConfig } from '../config/configManager.js';
 import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
@@ -43,9 +44,10 @@ export function AutoRecordApp({
     activeMic,
     activeGlossary,
     currentTextPath,
+    retryMenu,
   } = state;
 
-  const { handleStopAndTranscribe, togglePause, retry, forceStop } = actions;
+  const { handleStopAndTranscribe, togglePause, selectRetry, confirmRetry, forceStop } = actions;
 
   useInput(
     (input, key) => {
@@ -55,8 +57,7 @@ export function AutoRecordApp({
         return;
       }
       if (failure) {
-        if (input.toLowerCase() === ActionHotkey.RECORD) retry();
-        if (input.toLowerCase() === ActionHotkey.CANCEL_Q) exit();
+        if (retryMenu === null && input.toLowerCase() === ActionHotkey.CANCEL_Q) exit();
         return;
       }
       if (key.return) handleStopAndTranscribe();
@@ -90,10 +91,19 @@ export function AutoRecordApp({
         <Box flexDirection="column" marginTop={1}>
           <Text color="red">{failure}</Text>
           <Text dimColor>Audio saved at {currentAudioPath}</Text>
-          <Text>
-            Press [{ActionHotkey.RECORD}] to retry · [{ActionHotkey.CANCEL_Q}] to quit
-          </Text>
+          {retryMenu === null && <Text>Press [{ActionHotkey.CANCEL_Q}] to quit</Text>}
         </Box>
+      )}
+
+      {failure !== null && retryMenu !== null && !isTranscribing && (
+        <PreflightPrompt
+          audioSeconds={retryMenu.audioSeconds}
+          rows={retryMenu.rows}
+          selected={retryMenu.selected}
+          onSelect={selectRetry}
+          onConfirm={confirmRetry}
+          onCancel={exit}
+        />
       )}
 
       {transcriptionResult !== '' && (

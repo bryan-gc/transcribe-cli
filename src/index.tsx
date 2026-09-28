@@ -35,6 +35,7 @@ import { activeCapabilities, engineBlockers, formatReport, runChecks } from './s
 import { engineLabel } from './components/statusFields.js';
 import { formatUsageReport, readUsage } from './utils/usageLog.js';
 import { backfillMeta, transcriptsWithoutMeta } from './utils/backfillMeta.js';
+import { findRetryTarget, RetryError, type RetryTarget } from './utils/retryTarget.js';
 import { createInterface } from 'readline/promises';
 import { AVAILABLE_LANGUAGES, Cmd, DIR } from './constants.js';
 
@@ -43,7 +44,7 @@ const __dirname = path.dirname(__filename);
 const pkgPath = path.join(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary', 'speakers'];
+const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary', 'speakers', 'retry'];
 
 const program = new Command();
 
@@ -65,7 +66,7 @@ program
   .option('--all', 'With doctor: list every check · with usage: list every run')
   .argument(
     '[command]',
-    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show|suggest|review] [name] — list and edit glossaries · speakers <file> [A=Name] — name the voices of a transcript',
+    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show|suggest|review] [name] — list and edit glossaries · speakers <file> [A=Name] — name the voices of a transcript · retry [file] — transcribe the last recording again, or that one',
   )
   .allowExcessArguments()
   .option('--no-copy', 'Do not copy the result to the clipboard')
@@ -245,6 +246,17 @@ if (!setupRequired) {
   ConfigManager.initializeBasePath(config.basePath);
 }
 
+let retryOf: RetryTarget | undefined;
+if (command === 'retry') {
+  try {
+    retryOf = findRetryTarget(config.basePath, program.args[1]);
+  } catch (error) {
+    if (!(error instanceof RetryError)) throw error;
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  }
+}
+
 function Root({ initialConfig, options }: { initialConfig: AppConfig; options: ResolvedOptions }) {
   const [appConfig, setAppConfig] = useState(initialConfig);
   const [pendingSetup, setPendingSetup] = useState(setupRequired);
@@ -270,11 +282,12 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     engine: options.engine,
   };
 
-  if (options.file) {
+  if (options.file || retryOf) {
     return (
       <ImportApp
         appConfig={effective}
-        filePath={options.file}
+        filePath={retryOf?.audioPath ?? options.file ?? ''}
+        retryOf={retryOf}
         glossary={options.glossary}
         diarize={options.diarize}
         nameSpeakers={options.nameSpeakers}
