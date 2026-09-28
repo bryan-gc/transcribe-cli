@@ -120,7 +120,9 @@ async function offerMetaBackfill(missing: string[]): Promise<void> {
     return;
   }
   process.stdout.write('Adding metadata...\n');
-  process.stdout.write(`Done: ${backfillMeta(missing)} .meta.json files added.\n\n`);
+  process.stdout.write(
+    `Done: ${backfillMeta(missing)} transcriptions now say where they came from.\n\n`,
+  );
 }
 
 if (command === 'doctor') {
