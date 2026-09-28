@@ -13,19 +13,22 @@ import {
   tookField,
   costField,
   audioLengthField,
+  asideField,
 } from './statusFields.js';
 
 export function AutoRecordApp({
   appConfig,
   glossary,
   diarize,
+  aside = false,
 }: {
   appConfig: AppConfig;
   glossary: string;
   diarize: boolean;
+  aside?: boolean;
 }) {
   const { exit } = useApp();
-  const { state, actions } = useAutoRecord(appConfig, glossary, diarize, exit);
+  const { state, actions } = useAutoRecord(appConfig, glossary, diarize, aside, exit);
 
   const {
     statusText,
@@ -79,6 +82,7 @@ export function AutoRecordApp({
           ...tookField(lastRun),
           ...costField(lastRun),
           clipboardField(appConfig.autoCopy, lastRun, appConfig.wrapClipboard),
+          ...asideField(aside),
         ]}
       />
 

@@ -30,6 +30,7 @@ export interface ChunkMeta {
 export interface TranscriptionMeta {
   at: string;
   source: RecordingKind;
+  aside?: true;
   audio: { file: string; seconds?: number };
   engine: string;
   model: string;
@@ -45,6 +46,7 @@ export interface TranscriptionMeta {
 
 export interface MetaInput {
   source: RecordingKind;
+  aside?: boolean;
   audioFile: string;
   audioSeconds?: number;
   engine: string;
@@ -87,6 +89,7 @@ export function buildMeta(input: MetaInput): TranscriptionMeta {
   return {
     at: (input.at ?? new Date()).toISOString(),
     source: input.source,
+    ...(input.aside ? { aside: true as const } : {}),
     audio: { file: input.audioFile, seconds: input.audioSeconds },
     engine: input.engine,
     model: input.model,

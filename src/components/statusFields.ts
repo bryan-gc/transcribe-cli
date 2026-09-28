@@ -10,6 +10,10 @@ import {
 } from '../utils/runTranscription.js';
 import { formatCost } from '../utils/transcriptionMeta.js';
 
+export function asideField(aside: boolean): StatusField[] {
+  return aside ? [{ label: 'Aside', value: 'marked in the meta and usage log' }] : [];
+}
+
 export function languageField(language: LanguageCode): StatusField {
   return { label: 'Language', value: LANGUAGE_NAMES[language] };
 }

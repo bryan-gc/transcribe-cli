@@ -34,6 +34,7 @@ export interface TranscriptionJob {
   metaPath?: string;
   basePath?: string;
   source: RecordingKind;
+  aside?: boolean;
   copyToClipboard: boolean;
   wrap?: boolean;
   glossaryLearning?: GlossaryLearning;
@@ -104,6 +105,7 @@ export async function runTranscription(
 
   const meta = buildMeta({
     source: job.source,
+    aside: job.aside,
     audioFile: path.basename(job.audioPath),
     audioSeconds: audioDurationSeconds(job.audioPath),
     engine: result.engine,

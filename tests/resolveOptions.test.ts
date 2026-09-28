@@ -182,3 +182,8 @@ test('the general glossary is on unless the flag, the config or -g none turn it 
   assert.equal(none.glossary, '');
   assert.equal(none.useGeneralGlossary, false);
 });
+
+test('aside is off unless the flag asks for it', () => {
+  assert.equal(resolveOptions({}, config(), {}).aside, false);
+  assert.equal(resolveOptions({ aside: true }, config(), {}).aside, true);
+});

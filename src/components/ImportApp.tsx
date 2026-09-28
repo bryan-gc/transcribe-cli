@@ -15,6 +15,7 @@ import {
   tookField,
   costField,
   audioLengthField,
+  asideField,
 } from './statusFields.js';
 
 export function ImportApp({
@@ -24,6 +25,7 @@ export function ImportApp({
   diarize,
   confirmLongAudio,
   nameSpeakers = false,
+  aside = false,
 }: {
   appConfig: AppConfig;
   filePath: string;
@@ -31,6 +33,7 @@ export function ImportApp({
   diarize: boolean;
   confirmLongAudio: boolean;
   nameSpeakers?: boolean;
+  aside?: boolean;
 }) {
   const { exit } = useApp();
   const { state, actions } = useImportTranscribe(
@@ -40,6 +43,7 @@ export function ImportApp({
     diarize,
     confirmLongAudio,
     nameSpeakers,
+    aside,
     exit,
   );
 
@@ -88,6 +92,7 @@ export function ImportApp({
           ...tookField(lastRun),
           ...costField(lastRun),
           clipboardField(appConfig.autoCopy, lastRun, appConfig.wrapClipboard),
+          ...asideField(aside),
         ]}
       />
 

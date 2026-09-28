@@ -28,6 +28,7 @@ export function useAutoRecord(
   appConfig: AppConfig,
   glossary: string,
   diarize: boolean,
+  aside: boolean,
   exit: () => void,
 ) {
   const [statusText, setStatusText] = useState('Initializing recording...');
@@ -178,6 +179,7 @@ export function useAutoRecord(
         metaPath: currentMetaPath,
         basePath: appConfig.basePath,
         source: RecordingKind.RECORDED,
+        aside,
         copyToClipboard: appConfig.autoCopy,
         wrap: appConfig.wrapClipboard,
         glossaryLearning: appConfig.autoGlossary,

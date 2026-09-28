@@ -197,6 +197,10 @@ and of its line in `usage.jsonl`, and by the folder it sits in:
 - `imported`: an audio file passed with `-f`, whoever is speaking in it. That includes your own
   voice notes, and a recording of this tool transcribed again with `-f`.
 
+`-a, --aside` adds `"aside": true` to that same meta and log line, for a run you want to tell apart
+later: a meeting, a class, a video playing. It is saved, copied and counted like any other run, in
+the same folder, and works with `-f` too.
+
 The field exists since 1.1.0 (2026-09-07). Transcripts from before that have no `.meta.json`; they
 are all in `recorded/`, because importing files did not exist yet, so the folder is their answer.
 
@@ -323,6 +327,7 @@ If the engine you picked is not usable at all — no API key, or WhisperX not in
 | `-c, --config` | Open the configuration menu instead of recording straight away |
 | `-f, --file <path>` | Transcribe an existing audio file instead of recording |
 | `-s, --speakers` | Label who is speaking, for recordings with more than one voice |
+| `-a, --aside` | Save as usual, marked `"aside"` in the meta and in `usage.jsonl` |
 | `--local` | Transcribe on this machine with WhisperX instead of the API |
 | `--engine <name>` | `openai` or `local`, the long form of `--local` |
 | `-l, --language <code>` | Language of the audio: `es`, `en`, `pt`, `fr`, `de` |

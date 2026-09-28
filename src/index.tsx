@@ -58,6 +58,7 @@ program
   .option('-s, --speakers', 'Detect and label who is speaking')
   .option('--name-speakers', 'With -f: label speakers, then name each voice after listening to it')
   .option('--local', 'Use the local WhisperX engine instead of the API')
+  .option('-a, --aside', 'Save this run as usual, marked "aside" in its meta and in usage.jsonl')
   .option('--engine <name>', 'openai | local')
   .option('--all', 'With doctor: list every check · with usage: list every run')
   .argument(
@@ -234,6 +235,7 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
         glossary={options.glossary}
         diarize={options.diarize}
         nameSpeakers={options.nameSpeakers}
+        aside={options.aside}
         confirmLongAudio={options.confirmLongAudio}
       />
     );
@@ -241,7 +243,12 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
   return options.manual ? (
     <App appConfig={effective} />
   ) : (
-    <AutoRecordApp appConfig={effective} glossary={options.glossary} diarize={options.diarize} />
+    <AutoRecordApp
+      appConfig={effective}
+      glossary={options.glossary}
+      diarize={options.diarize}
+      aside={options.aside}
+    />
   );
 }
 

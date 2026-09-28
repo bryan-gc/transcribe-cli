@@ -155,6 +155,13 @@ test('the meta file says whether the audio was recorded or imported with -f', as
   assert.equal(JSON.parse(fs.readFileSync(metaPath, 'utf8')).source, 'imported');
 });
 
+test('an aside run is marked in its meta, and a normal run carries no aside field', async () => {
+  const aside = await runTranscription(new MockTranscriber(SRT), job({ aside: true }));
+  const normal = await runTranscription(new MockTranscriber(SRT), job());
+  assert.equal(aside.meta.aside, true);
+  assert.equal('aside' in normal.meta, false);
+});
+
 test('the meta records which glossary was used and whether it was trimmed', async () => {
   const j = job({ glossary: 'Grafana', glossaryName: 'demo' });
   const outcome = await runTranscription(new MockTranscriber(SRT), j);

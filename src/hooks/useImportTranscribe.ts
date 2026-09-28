@@ -52,6 +52,7 @@ export function useImportTranscribe(
   diarize: boolean,
   confirmLongAudio: boolean,
   nameSpeakers: boolean,
+  aside: boolean,
   exit: () => void,
 ) {
   const [statusText, setStatusText] = useState('Preparing the file...');
@@ -96,6 +97,7 @@ export function useImportTranscribe(
           metaPath: imported.metaPath,
           basePath: appConfig.basePath,
           source: RecordingKind.IMPORTED,
+          aside,
           copyToClipboard: appConfig.autoCopy,
           wrap: appConfig.wrapClipboard,
           glossaryLearning: appConfig.autoGlossary,
@@ -120,7 +122,7 @@ export function useImportTranscribe(
         setIsTranscribing(false);
       }
     },
-    [appConfig, glossary, language, exit, nameSpeakers],
+    [appConfig, glossary, language, exit, nameSpeakers, aside],
   );
 
   useEffect(() => {
