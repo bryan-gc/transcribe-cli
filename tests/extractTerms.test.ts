@@ -121,3 +121,16 @@ test('older terms rank below recent ones with the same signals', () => {
   assert.ok(recent.score > old.score);
   assert.match(recent.example, /Zorblax/);
 });
+
+test('whisper hallucinations in old transcripts never become glossary terms', () => {
+  const amara = 'Subtítulos por la comunidad de Amara.org';
+  const docs = corpus({
+    1: amara,
+    2: amara,
+    3: `${amara} ${amara}`,
+    4: '¡Gracias por ver el video!',
+  });
+  const found = terms(docs).map(normalizeTerm);
+  assert.ok(!found.includes('amara.org'));
+  assert.ok(!found.some((t) => t.includes('amara')));
+});

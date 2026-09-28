@@ -42,6 +42,12 @@ const TOKEN = /[\p{L}\p{N}][\p{L}\p{N}'’\-./]*[\p{L}\p{N}]|[\p{L}\p{N}]/gu;
 const SENTENCE_BREAK = /[.?!¿¡:;\n]\s*$/;
 const LABEL = /^\s*(\[Speaker [^\]]{1,20}\]|[^\s:]{1,20}:)\s*/gmu;
 const NUMBER = /^\d+([.,]\d+)*$/;
+const WHISPER_HALLUCINATIONS = [
+  /subt[ií]tulos(?: realizados)? por la comunidad de amara\.org/giu,
+  /amara\.org/giu,
+  /¡?gracias por ver(?: el)? v[ií]deo!?/giu,
+  /¡?suscr[ií]bete(?: al canal)?!?/giu,
+];
 const SHAPES = [/\d/, /\p{Ll}\p{Lu}/u, /^\p{Lu}{2,}$/u, /\p{L}[-.]\p{L}/u];
 
 export function normalizeTerm(term: string): string {
@@ -74,7 +80,7 @@ export function extractCandidates(docs: Doc[], options: ExtractOptions = {}): Ca
   const now = options.now ?? new Date();
   const ratio = options.commonDocRatio ?? COMMON_DOC_RATIO;
   const tokenized = docs
-    .map((doc) => ({ doc, text: stripLabels(doc.text) }))
+    .map((doc) => ({ doc, text: stripLabels(stripWhisperHallucinations(doc.text)) }))
     .map(({ doc, text }) => ({
       doc,
       text,
@@ -175,6 +181,10 @@ function looksLikeTerm(form: string): boolean {
 
 function stripLabels(text: string): string {
   return text.replace(LABEL, '');
+}
+
+export function stripWhisperHallucinations(text: string): string {
+  return WHISPER_HALLUCINATIONS.reduce((clean, phrase) => clean.replace(phrase, ' '), text);
 }
 
 function tokenize(text: string): Token[] {
