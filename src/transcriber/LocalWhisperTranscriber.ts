@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { promptAsLine } from '../utils/glossaryPrompt.js';
 import os from 'os';
 import path from 'path';
 import { spawn, type ChildProcess } from 'child_process';
@@ -116,14 +117,6 @@ export function buildArgs(
     outputDir,
     '--print_progress',
     'True',
-    ...(options.prompt ? ['--hotwords', hotwords(options.prompt)] : []),
+    ...(options.prompt ? ['--hotwords', promptAsLine(options.prompt)] : []),
   ];
-}
-
-function hotwords(prompt: string): string {
-  return prompt
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join(', ');
 }

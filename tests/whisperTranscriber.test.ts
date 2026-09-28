@@ -63,6 +63,17 @@ test('forwards the glossary as the prompt when there is one', async () => {
   assert.equal(seen[0]!.form?.get('prompt'), 'Kubernetes, Terraform');
 });
 
+test('a glossary with one term per line reaches whisper-1 as one comma-separated line', async () => {
+  const { impl, seen } = stubFetch('text');
+  await new WhisperTranscriber('sk-test', impl).transcribe({
+    audioFilePath: tempAudio(),
+    language: LanguageCode.SPANISH,
+    format: TranscriptionFormat.TEXT,
+    prompt: 'PDF\nOpenAI\n\nActivity Book',
+  });
+  assert.equal(seen[0]!.form?.get('prompt'), 'PDF, OpenAI, Activity Book');
+});
+
 test('the diarize model never receives the glossary, since it does not accept a prompt', async () => {
   const { impl, seen } = stubFetch('{"text":"hola","segments":[]}');
   const result = await new WhisperTranscriber('sk-test', impl).transcribe({

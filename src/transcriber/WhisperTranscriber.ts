@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { promptAsLine } from '../utils/glossaryPrompt.js';
 import path from 'path';
 import OpenAI from 'openai';
 import type {
@@ -116,7 +117,7 @@ export class WhisperTranscriber implements ITranscriber {
       response_format: diarize ? TranscriptionFormat.DIARIZED : options.format,
       ...(diarize ? { chunking_strategy: DIARIZE_CHUNKING } : {}),
       ...(diarize && options.knownSpeakers?.length ? speakerReferences(options.knownSpeakers) : {}),
-      ...(sendPrompt ? { prompt: options.prompt } : {}),
+      ...(sendPrompt && options.prompt ? { prompt: promptAsLine(options.prompt) } : {}),
     });
 
     options.onProgress?.('Response received from OpenAI.');

@@ -55,3 +55,11 @@ function keepLastWords(line: string, budget: number): string {
   const text = words.slice(start).join(' ');
   return estimateTokens(text) > budget ? text.slice(-budget * CHARS_PER_TOKEN) : text;
 }
+
+export function promptAsLine(prompt: string): string {
+  return prompt
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(', ');
+}
