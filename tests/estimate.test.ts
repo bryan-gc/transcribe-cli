@@ -73,6 +73,31 @@ test('the measured speed averages every run of the same model and ignores the re
   assert.equal(speedOf('never-seen'), undefined);
 });
 
+test('the newest run is the latest day, not the latest hour of any day', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'history-'));
+  const data = path.join(base, DIR.DATA);
+  const write = (kind: RecordingKind, day: string, stem: string, tookMs: number) => {
+    const dir = path.join(data, kind, day);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${stem}.meta.json`), JSON.stringify(meta({ tookMs })));
+  };
+  write(RecordingKind.RECORDED, '2026-09-26', '23-00-00', 1);
+  write(RecordingKind.IMPORTED, '2026-09-27', '08-00-00__nota', 2);
+
+  assert.equal(readRecentMeta(base, 1)[0].tookMs, 2);
+  fs.rmSync(base, { recursive: true, force: true });
+});
+
+test('a meta without an engine is not a measured run and stays out of the history', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'history-'));
+  const day = path.join(base, DIR.DATA, RecordingKind.RECORDED, '2026-05-15');
+  fs.mkdirSync(day, { recursive: true });
+  fs.writeFileSync(path.join(day, '19-37-24.meta.json'), JSON.stringify({ source: 'recorded' }));
+
+  assert.deepEqual(readRecentMeta(base), []);
+  fs.rmSync(base, { recursive: true, force: true });
+});
+
 test('the history is read from the archive, newest first, skipping files that are not JSON', () => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'history-'));
   const day = path.join(base, DIR.DATA, RecordingKind.RECORDED, '2026-09-07');

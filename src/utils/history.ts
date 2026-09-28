@@ -22,15 +22,20 @@ export function readRecentMeta(
   walk(root);
 
   return files
-    .sort((a, b) => path.basename(b).localeCompare(path.basename(a)))
+    .sort((a, b) => recency(b).localeCompare(recency(a)))
     .flatMap((file) => {
       try {
-        return [JSON.parse(fs.readFileSync(file, Encoding.UTF8)) as TranscriptionMeta];
+        const meta = JSON.parse(fs.readFileSync(file, Encoding.UTF8)) as TranscriptionMeta;
+        return meta.engine === undefined ? [] : [meta];
       } catch {
         return [];
       }
     })
     .slice(0, limit);
+}
+
+function recency(file: string): string {
+  return `${path.basename(path.dirname(file))}/${path.basename(file)}`;
 }
 
 export function measuredSpeed(history: TranscriptionMeta[]): SpeedLookup {
