@@ -201,8 +201,12 @@ and of its line in `usage.jsonl`, and by the folder it sits in:
 later: a meeting, a class, a video playing. It is saved, copied and counted like any other run, in
 the same folder, and works with `-f` too.
 
-The field exists since 1.1.0 (2026-09-07). Transcripts from before that have no `.meta.json`; they
-are all in `recorded/`, because importing files did not exist yet, so the folder is their answer.
+The field exists since 1.1.0 (2026-09-07). Transcripts from before that had no `.meta.json`. When
+the app finds any, whatever command you run, it asks once whether to add one: with the date taken
+from the folder and the file name, the source taken from the folder, the audio file and its length,
+and `"backfilled": true`. Nothing else is written, and existing files are never changed. Answer
+`never` to stop the question; `askMetaBackfill: true` in the config brings it back. Engine, model
+and cost are left out because they are not known, so these runs do not count in `usage`.
 
 ### What Gets Copied
 

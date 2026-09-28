@@ -36,6 +36,7 @@ export interface AppConfig {
   engine: Engine;
   localWhisper: LocalWhisperConfig;
   binPaths: BinPaths;
+  askMetaBackfill: boolean;
 }
 
 export const ENV_OVERRIDES = {
@@ -66,6 +67,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     computeType: 'float16',
   },
   binPaths: { ffmpeg: '', arecord: '' },
+  askMetaBackfill: true,
 };
 
 export class ConfigManager {
@@ -110,6 +112,10 @@ export class ConfigManager {
         binPath: given(ENV_OVERRIDES.WHISPERX_PATH) ?? config.localWhisper.binPath,
       },
     };
+  }
+
+  static saveSetting<K extends keyof AppConfig>(key: K, value: AppConfig[K]): void {
+    ConfigManager.save({ ...ConfigManager.readStored(), [key]: value });
   }
 
   static save(config: AppConfig): void {

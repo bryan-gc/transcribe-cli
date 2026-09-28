@@ -34,6 +34,8 @@ import { needsSetup } from './transcriber/createTranscriber.js';
 import { activeCapabilities, engineBlockers, formatReport, runChecks } from './system/doctor.js';
 import { engineLabel } from './components/statusFields.js';
 import { formatUsageReport, readUsage } from './utils/usageLog.js';
+import { backfillMeta, transcriptsWithoutMeta } from './utils/backfillMeta.js';
+import { createInterface } from 'readline/promises';
 import { AVAILABLE_LANGUAGES, Cmd, DIR } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,6 +82,45 @@ if (command !== undefined && !KNOWN_COMMANDS.includes(command)) {
       'Run transcribe-cli --help to see every flag, or transcribe-cli -c for the settings menu.\n',
   );
   process.exit(1);
+}
+
+if (
+  config.askMetaBackfill &&
+  process.stdin.isTTY &&
+  process.stdout.isTTY &&
+  ConfigManager.validateBasePath(config.basePath)
+) {
+  ConfigManager.migrateLegacyLayout(config.basePath);
+  const missing = transcriptsWithoutMeta(config.basePath);
+  if (missing.length > 0) await offerMetaBackfill(missing);
+}
+
+async function offerMetaBackfill(missing: string[]): Promise<void> {
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = (
+    await prompt.question(
+      `${missing.length} transcriptions have no .meta.json, so nothing says whether they were recorded or imported.\n` +
+        'Add one to each, with its date, its source and its audio? Existing files are not changed.\n' +
+        '[y] yes · [n] not now · [never] do not ask again: ',
+    )
+  )
+    .trim()
+    .toLowerCase();
+  prompt.close();
+
+  if (answer === 'never') {
+    ConfigManager.saveSetting('askMetaBackfill', false);
+    process.stdout.write(
+      'Not asking again. Set askMetaBackfill to true in the config to be asked.\n\n',
+    );
+    return;
+  }
+  if (answer !== 'y' && answer !== 'yes') {
+    process.stdout.write('Left as they are. You will be asked next time.\n\n');
+    return;
+  }
+  process.stdout.write('Adding metadata...\n');
+  process.stdout.write(`Done: ${backfillMeta(missing)} .meta.json files added.\n\n`);
 }
 
 if (command === 'doctor') {
