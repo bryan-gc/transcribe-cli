@@ -19,8 +19,8 @@ import { appendUsage } from './usageLog.js';
 import { wrapTranscript } from './transcriptWrapper.js';
 import { applyReplacements, parseReplacements } from './replacements.js';
 import { buildGlossaryPrompt, type GlossaryPrompt } from './glossaryPrompt.js';
-import type { LanguageCode } from '../constants.js';
-import { Encoding, RecordingKind, TranscriptionFormat } from '../constants.js';
+import type { LanguageCode, RecordingKind } from '../constants.js';
+import { Encoding, TranscriptionFormat } from '../constants.js';
 
 export interface TranscriptionJob {
   audioPath: string;
