@@ -21,7 +21,7 @@ machine with WhisperX — your choice, per run or as a default.
 - **`transcribe-cli doctor`** to tell you what is missing, per capability, with the exact command
   to install it.
 - **Retry without losing the audio** if a transcription fails, picking the engine, and
-  `transcribe-cli retry` for one that came back wrong.
+  and `transcribe-cli list` to transcribe any past one again and keep every attempt.
 - **Five languages**: `es`, `en`, `pt`, `fr`, `de`.
 
 ## System Requirements
@@ -180,6 +180,7 @@ Everything lives under the base path you chose on first run (`~/transcribe_cli_d
 transcriptions/
   recorded/2026-09-07/15-01-07.wav        the audio, the .srt, the .txt and the .meta.json
   imported/2026-09-07/15-14-10__nota.txt  files brought in with -f, prefixed with when you ran it
+  …/15-01-07.attempts.json                earlier attempts, once it was transcribed again
 glossaries/                               one .txt per glossary
 usage.jsonl                               one line per transcription
 ```
@@ -323,25 +324,28 @@ The audio is written to disk before anything is sent, so a failure never costs y
 The tool stays open and lists the engines with what each would cost and take, your default one
 selected: `[Enter]` tries again with it, `[e]` moves to the next, `[q]` quits.
 
-### Transcribing the Last One Again
+### Past Transcriptions and Their Attempts
 
-When a transcription comes back but is wrong — words that were never said, another alphabet, a
-sentence repeated — run it again on the same audio, with the engine you choose:
+When a transcription comes back wrong — words that were never said, another alphabet, a sentence
+repeated — open the history and transcribe it again on the same audio:
 
 ```bash
-transcribe-cli retry                    # the last recording or import, with your default engine
-transcribe-cli retry --local            # the same, on this machine
-transcribe-cli retry -s                 # the same, with speaker labels
-transcribe-cli retry path/to/00-57-32.txt   # an older one: its .txt, .meta.json or audio
+transcribe-cli list        # or: transcribe-cli ls
 ```
 
-It replaces the `.txt`, `.srt` and `.meta.json` next to that audio, keeps it recorded or imported
-and aside if it was, copies the result as usual, and adds the run to `usage.jsonl`. Nothing is
-copied into `imported/`. Every flag works as on a normal run; what is not given comes from your
-configuration.
+Every recording and import is listed, newest first, with its length and the start of its text.
+`[Enter]` opens one and shows all its attempts, the first one at the top and the saved one last:
 
-If the engine you picked is not usable at all — no API key, or WhisperX not installed — it says so
-**before** opening the microphone, so you do not record into a dead end.
+- `[c]` copies the selected attempt, with the automatic-transcription notice like any other copy.
+- `[r]` transcribes it again: pick the engine from the list, your default one selected. The new
+  text becomes the saved one, and the one it replaces stays as an earlier attempt.
+- `[Esc]` goes back to the list, `[q]` quits.
+
+Transcribing again replaces the `.txt`, `.srt` and `.meta.json` next to the audio, and earlier
+attempts go to a `.attempts.json` beside them, so any tool reading the `.txt` files still sees one
+text per recording. It keeps the transcription recorded or imported, and aside if it was.
+Recordings that never got a transcript are listed too, ready to be transcribed. Flags such as
+`--local`, `-s` or `-g` set the default choice.
 
 ### CLI Options
 

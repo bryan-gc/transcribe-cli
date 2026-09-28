@@ -13,7 +13,6 @@ import { audioDurationSeconds } from '../audio/audioDuration.js';
 import { glossaryMetaName, readSelectedGlossaries } from '../utils/fileUtils.js';
 import type { EngineChoice } from '../utils/estimate.js';
 import { buildPreflight, type Preflight } from '../utils/preflight.js';
-import type { RetryTarget } from '../utils/retryTarget.js';
 import type { AppConfig } from '../config/configManager.js';
 import {
   Cmd,
@@ -49,7 +48,6 @@ export function useImportTranscribe(
   nameSpeakers: boolean,
   aside: boolean,
   exit: () => void,
-  retryOf?: RetryTarget,
 ) {
   const [statusText, setStatusText] = useState('Preparing the file...');
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -92,15 +90,14 @@ export function useImportTranscribe(
           diarizedPath: imported.diarizedPath,
           metaPath: imported.metaPath,
           basePath: appConfig.basePath,
-          source: retryOf?.source ?? RecordingKind.IMPORTED,
-          aside: aside || retryOf?.aside === true,
+          source: RecordingKind.IMPORTED,
+          aside,
           copyToClipboard: appConfig.autoCopy,
           wrap: appConfig.wrapClipboard,
           glossaryLearning: appConfig.autoGlossary,
           onProgress: (msg) => setStatusText(`⏳ ${msg}`),
         });
 
-        if (retryOf && !outcome.meta.diarized) fs.rmSync(imported.diarizedPath, { force: true });
         setTranscriptionResult(outcome.text);
         setLastRun(outcome);
         setStatusText(describeOutcome(outcome));
@@ -126,7 +123,7 @@ export function useImportTranscribe(
         setIsTranscribing(false);
       }
     },
-    [appConfig, glossary, language, exit, nameSpeakers, aside, retryOf, diarize],
+    [appConfig, glossary, language, exit, nameSpeakers, aside, diarize],
   );
 
   useEffect(() => {
@@ -135,12 +132,8 @@ export function useImportTranscribe(
 
     let imported: ImportedAudio;
     try {
-      setStatusText(
-        retryOf
-          ? `Transcribing ${path.basename(retryOf.audioPath)} again...`
-          : `Copying ${path.basename(filePath)} into the archive...`,
-      );
-      imported = retryOf ?? prepareImportedAudio(filePath, appConfig.basePath);
+      setStatusText(`Copying ${path.basename(filePath)} into the archive...`);
+      imported = prepareImportedAudio(filePath, appConfig.basePath);
       importedRef.current = imported;
     } catch (err: unknown) {
       setFailure(err instanceof ImportError ? err.message : String(err));
@@ -155,7 +148,7 @@ export function useImportTranscribe(
       return;
     }
     void transcribe(imported);
-  }, [appConfig, confirmLongAudio, filePath, retryOf, transcribe]);
+  }, [appConfig, confirmLongAudio, filePath, transcribe]);
 
   return {
     state: {
@@ -166,10 +159,9 @@ export function useImportTranscribe(
       lastRun,
       preflight,
       engine: choiceRef.current.engine,
-      isRetry: retryOf !== undefined,
       language,
       glossary,
-      sourceName: path.basename(retryOf?.audioPath ?? filePath),
+      sourceName: path.basename(filePath),
       audioPath: importedRef.current?.audioPath ?? '',
       textPath: importedRef.current?.textPath ?? '',
       naming,

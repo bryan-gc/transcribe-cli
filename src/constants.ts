@@ -172,6 +172,15 @@ export enum ActionHotkey {
 
 export const HOTKEY_PAUSE_LABEL = 'space' as const;
 
+export enum HistoryHotkey {
+  COPY = 'c',
+  RETRY = 'r',
+  BACK = 'b',
+  QUIT = 'q',
+}
+
+export const HISTORY_PAGE_ROWS = 12 as const;
+
 export const RESUME_STALL_CHECK_MS = 3000 as const;
 
 // ─── Transcriber Constants ────────────────────────────────────────────────────

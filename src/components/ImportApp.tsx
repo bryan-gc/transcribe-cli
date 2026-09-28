@@ -6,7 +6,6 @@ import { PreflightPrompt } from './PreflightPrompt.js';
 import { SpeakerNaming } from './SpeakerNaming.js';
 import { useImportTranscribe } from '../hooks/useImportTranscribe.js';
 import type { AppConfig } from '../config/configManager.js';
-import type { RetryTarget } from '../utils/retryTarget.js';
 import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
 import {
   clipboardField,
@@ -27,7 +26,6 @@ export function ImportApp({
   confirmLongAudio,
   nameSpeakers = false,
   aside = false,
-  retryOf,
 }: {
   appConfig: AppConfig;
   filePath: string;
@@ -36,7 +34,6 @@ export function ImportApp({
   confirmLongAudio: boolean;
   nameSpeakers?: boolean;
   aside?: boolean;
-  retryOf?: RetryTarget;
 }) {
   const { exit } = useApp();
   const { state, actions } = useImportTranscribe(
@@ -48,7 +45,6 @@ export function ImportApp({
     nameSpeakers,
     aside,
     exit,
-    retryOf,
   );
 
   const {
@@ -64,7 +60,6 @@ export function ImportApp({
     audioPath,
     textPath,
     naming,
-    isRetry,
   } = state;
 
   useInput(
@@ -83,7 +78,7 @@ export function ImportApp({
   return (
     <Box flexDirection="column" padding={1}>
       <Header
-        title={`=== transcribe-cli (${isRetry ? 'Retry' : 'Import'}) ===`}
+        title="=== transcribe-cli (Import) ==="
         statusText={statusText}
         isBusy={isTranscribing}
         fields={[

@@ -35,7 +35,7 @@ import { activeCapabilities, engineBlockers, formatReport, runChecks } from './s
 import { engineLabel } from './components/statusFields.js';
 import { formatUsageReport, readUsage } from './utils/usageLog.js';
 import { backfillMeta, transcriptsWithoutMeta } from './utils/backfillMeta.js';
-import { findRetryTarget, RetryError, type RetryTarget } from './utils/retryTarget.js';
+import { HistoryApp } from './components/HistoryApp.js';
 import { createInterface } from 'readline/promises';
 import { AVAILABLE_LANGUAGES, Cmd, DIR } from './constants.js';
 
@@ -44,7 +44,8 @@ const __dirname = path.dirname(__filename);
 const pkgPath = path.join(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary', 'speakers', 'retry'];
+const KNOWN_COMMANDS = ['doctor', 'usage', 'glossary', 'speakers', 'list', 'ls'];
+const HISTORY_COMMANDS = ['list', 'ls'];
 
 const program = new Command();
 
@@ -66,7 +67,7 @@ program
   .option('--all', 'With doctor: list every check · with usage: list every run')
   .argument(
     '[command]',
-    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show|suggest|review] [name] — list and edit glossaries · speakers <file> [A=Name] — name the voices of a transcript · retry [file] — transcribe the last recording again, or that one',
+    'doctor — check the tools this setup needs · usage — what every transcription cost · glossary [edit|new|show|suggest|review] [name] — list and edit glossaries · speakers <file> [A=Name] — name the voices of a transcript · list — browse past transcriptions, copy any attempt or transcribe one again',
   )
   .allowExcessArguments()
   .option('--no-copy', 'Do not copy the result to the clipboard')
@@ -229,7 +230,9 @@ try {
 const setupRequired = needsSetup({ ...config, engine: options.engine });
 
 if (!setupRequired) {
-  const blockers = options.manual ? [] : engineBlockers({ ...config, engine: options.engine });
+  const browsing = command !== undefined && HISTORY_COMMANDS.includes(command);
+  const blockers =
+    options.manual || browsing ? [] : engineBlockers({ ...config, engine: options.engine });
   if (blockers.length > 0) {
     const detail = blockers
       .map((check) => {
@@ -244,17 +247,6 @@ if (!setupRequired) {
     process.exit(1);
   }
   ConfigManager.initializeBasePath(config.basePath);
-}
-
-let retryOf: RetryTarget | undefined;
-if (command === 'retry') {
-  try {
-    retryOf = findRetryTarget(config.basePath, program.args[1]);
-  } catch (error) {
-    if (!(error instanceof RetryError)) throw error;
-    process.stderr.write(`${error.message}\n`);
-    process.exit(1);
-  }
 }
 
 function Root({ initialConfig, options }: { initialConfig: AppConfig; options: ResolvedOptions }) {
@@ -282,12 +274,16 @@ function Root({ initialConfig, options }: { initialConfig: AppConfig; options: R
     engine: options.engine,
   };
 
-  if (options.file || retryOf) {
+  if (command !== undefined && HISTORY_COMMANDS.includes(command)) {
+    return (
+      <HistoryApp appConfig={effective} glossary={options.glossary} diarize={options.diarize} />
+    );
+  }
+  if (options.file) {
     return (
       <ImportApp
         appConfig={effective}
-        filePath={retryOf?.audioPath ?? options.file ?? ''}
-        retryOf={retryOf}
+        filePath={options.file}
         glossary={options.glossary}
         diarize={options.diarize}
         nameSpeakers={options.nameSpeakers}
