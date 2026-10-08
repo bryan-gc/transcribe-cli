@@ -22,8 +22,8 @@
     "test:watch": "pnpm cli test:watch",
     "lint": "eslint . --max-warnings 119",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write '**/*.{ts,tsx,js,mjs,json}'",
-    "format:check": "prettier --check '**/*.{ts,tsx,js,mjs,json}'",
+    "format": "prettier --write 'apps/**/*.{ts,tsx,js,mjs,json}' '*.{js,mjs,json}' '.vscode/*.json'",
+    "format:check": "prettier --check 'apps/**/*.{ts,tsx,js,mjs,json}' '*.{js,mjs,json}' '.vscode/*.json'",
     "release": "cd apps/cli && pnpm version",
     "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
   },

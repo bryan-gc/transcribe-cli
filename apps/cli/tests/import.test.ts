@@ -100,7 +100,7 @@ test('the general and topic glossaries reach whisper-1 as one line, without comm
     '# Glossary: general',
     'Kubernetes',
     '',
-    'OpenAI, Anthropic',
+    'OpenAI, Grafana',
     'kuberneti => Kubernetes',
   ]);
   glossary(sandbox, 'work', ['# topic', 'Pulumi']);
@@ -113,7 +113,7 @@ test('the general and topic glossaries reach whisper-1 as one line, without comm
   const result = await runCli(sandbox, ['-f', audio, '-g', 'work'], { env });
 
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(api.field(0, 'prompt'), 'Kubernetes, OpenAI, Anthropic, Pulumi');
+  assert.equal(api.field(0, 'prompt'), 'Kubernetes, OpenAI, Grafana, Pulumi');
   assert.equal(
     sandbox.read(sandbox.transcriptFile('imported', '.txt')),
     'We deploy Kubernetes on Kubernetes, not on kubernetikos.',
@@ -126,7 +126,7 @@ test('the general and topic glossaries reach whisper-1 as one line, without comm
     name: 'work',
     applied: true,
     trimmed: false,
-    estimatedTokens: 12,
+    estimatedTokens: 11,
     replacements: 2,
   });
   assert.match(result.screen, /Glossary: general \+ work/);

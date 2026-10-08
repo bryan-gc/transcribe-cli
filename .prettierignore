@@ -1,11 +1,3 @@
 dist/
 node_modules/
-tmp/
-glossaries/
-*.md
 pnpm-lock.yaml
-.sandbox/
-.local/
-.serena/
-.claude/
-docs/
