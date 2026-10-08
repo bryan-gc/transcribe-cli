@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  esbuild: true
+
+storeDir: ~/.local/share/pnpm/store
+
+engineStrict: true
+
+overrides:
+  eslint-plugin-sonarjs>typescript: ~5.9.3
+

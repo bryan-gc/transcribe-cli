@@ -6,13 +6,19 @@ Personal reference for working on and publishing `transcribe-cli`.
 
 ## Daily Development (No Build Required)
 
+The repository is a pnpm workspace (`pnpm-workspace.yaml`): the published CLI lives in `apps/cli`,
+and the root `package.json` only holds aliases and the shared tooling. Install once with
+`pnpm install`.
+
 While making changes, run the app directly from source using `tsx`. No compilation needed.
 
 ```bash
-npm start
+pnpm start
 ```
 
-This runs `tsx src/index.tsx` which executes TypeScript on the fly. Fast iteration, no build step.
+This runs `apps/cli/src/index.tsx` through `tsx`, which executes TypeScript on the fly. Fast
+iteration, no build step. Any script of the CLI can be reached from the root with
+`pnpm cli <script>`.
 
 ---
 
@@ -22,14 +28,14 @@ Use `npm link` to register the command globally on your machine, pointing direct
 
 ```bash
 # 1. Compile the source
-npm run build
+pnpm build
 
 # 2. Register the command globally
-npm link
+cd apps/cli && npm link
 ```
 
 Now `transcribe-cli` works from any terminal on your machine and points to your local `dist/`.
-Every time you rebuild (`npm run build`), the global command reflects the changes immediately.
+Every time you rebuild (`pnpm build`), the global command reflects the changes immediately.
 
 ### To unlink (remove the global command)
 ```bash
@@ -65,15 +71,15 @@ git commit -m "feat: describe your changes"
 
 2. **Bump the version**:
 ```bash
-npm version patch
+pnpm release patch
 ```
-*(This command automatically updates `package.json` to the next version and creates a Git Tag locally. Use `minor` or `major` instead of `patch` if needed).*
+*(This runs `pnpm version patch` inside `apps/cli`: it updates `apps/cli/package.json`, commits it as the bare version number and creates the `v*` tag locally. Use `minor` or `major` instead of `patch` if needed. Going through `pnpm --filter` would skip the commit and the tag, which is why `release` changes directory instead).*
 
 3. **Push the code and the Tag to GitHub**:
 ```bash
 git push --follow-tags
 ```
-*(`--follow-tags` pushes both your commits and the tag `npm version` just created. As soon as the tag reaches GitHub, `publish.yml` runs.)*
+*(`--follow-tags` pushes both your commits and the tag `pnpm release` just created. As soon as the tag reaches GitHub, `publish.yml` runs.)*
 
 4. **Monitor the Action in GitHub**:
 Go to your repository on GitHub.com and click the **Actions** tab. You will see a workflow running. Once it finishes (it usually takes around 1 minute), your new version will be live on NPM with the Provenance badge.
@@ -89,9 +95,9 @@ npm install -g @bryan-gc/transcribe-cli
 
 | Scenario | Command |
 |---|---|
-| Quick development | `npm run start` |
-| Test as global binary locally | `npm run build && npm link` |
-| Release a new version | `npm version patch` -> `git push` -> `git push origin v1.0.X` |
+| Quick development | `pnpm start` |
+| Test as global binary locally | `pnpm try:global` |
+| Release a new version | `pnpm release patch` -> `git push --follow-tags` |
 | Update global install after release | `npm install -g @bryan-gc/transcribe-cli` |
 
 ---

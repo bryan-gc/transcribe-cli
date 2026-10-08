@@ -10,10 +10,7 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "eslint.validate": [
-    "typescript",
-    "typescriptreact"
-  ],
+  "eslint.validate": ["typescript", "typescriptreact"],
   "typescript.tsdk": "node_modules/typescript/lib",
   "search.exclude": {
     "**/dist": true

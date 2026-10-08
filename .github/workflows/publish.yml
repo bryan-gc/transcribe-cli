@@ -15,13 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
-          
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
+
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: cp README.md apps/cli/README.md
       - run: npm publish --access public
+        working-directory: apps/cli

@@ -8,12 +8,13 @@ CLAUDE.md
 docs/
 
 # Audio y transcripciones reales: el repo es público, nunca se commitean
-tests/fixtures/*.wav
-tests/fixtures/*.mp3
-tests/fixtures/*.m4a
+apps/cli/tests/fixtures/*.wav
+apps/cli/tests/fixtures/*.mp3
+apps/cli/tests/fixtures/*.m4a
 
 # sandbox de pruebas locales
 .sandbox/
 
 # artefactos locales de prueba (venv de whisperx, audios)
 .local/
+/apps/cli/README.md

@@ -395,7 +395,7 @@ voice is never labelled.
 With WhisperX installed, transcription runs on your own machine: no network, no cost per minute.
 
 ```bash
-./scripts/install-whisperx.sh      # a virtualenv of its own, no root needed
+./apps/cli/tools/install-whisperx.sh  # a virtualenv of its own, no root needed
 transcribe-cli --local
 ```
 
@@ -404,7 +404,7 @@ The installer does not touch your system Python or any packages other projects d
 key is needed at all.
 
 The virtualenv goes to `~/.transcribe-cli/venv-whisperx`; pass a path to put it somewhere else:
-`./scripts/install-whisperx.sh ~/venvs/whisperx`.
+`./apps/cli/tools/install-whisperx.sh ~/venvs/whisperx`.
 
 Speaker labels are not available locally yet; `--local --speakers` says so rather than quietly
 dropping them.
@@ -425,19 +425,19 @@ that is what the interactive menu is for.
 
 ## Development Usage
 
-If you are developing the tool locally and running it via `npm run start`, you must use a double dash (`--`) to pass arguments to the script instead of `npm` itself:
+The repository is a pnpm workspace; the CLI lives in `apps/cli`. Run it from source with `pnpm start`, passing arguments straight after the script name:
 
 ```bash
 # Auto Record Mode (Default)
-npm run start
+pnpm start
 
 # Manual Menu Mode
-npm run start -- --config
-npm run start -- -c
+pnpm start --config
+pnpm start -c
 
 # View Help
-npm run start -- --help
+pnpm start --help
 
 # View Version
-npm run start -- --version
+pnpm start --version
 ```
