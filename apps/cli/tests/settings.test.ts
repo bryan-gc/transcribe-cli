@@ -120,10 +120,14 @@ test('an engine that is not ready says so in the menu, and choosing it says what
   const session = startCli(sandbox, ['-c'], env);
   t.after(() => session.kill());
   await session.waitFor('↑↓ navigate');
+  const mark = session.mark();
   await session.press('e');
-  const picker = await session.waitFor('--- Select Engine ---');
-  await session.waitFor('Local · WhisperX  —  not ready (whisperx)');
-  assert.match(picker, /OpenAI API/);
+  await session.waitFor('--- Select Engine ---', { from: mark });
+  assert.ok(
+    await session.shows([/OpenAI API/, /Local · WhisperX {2}— {2}not ready \(whisperx\)/], {
+      from: mark,
+    }),
+  );
   await session.press(Key.DOWN, Key.DOWN, Key.ENTER);
   await session.waitFor(
     'Engine set, but whisperx is missing. Fix it with ./apps/cli/tools/install-whisperx.sh.',

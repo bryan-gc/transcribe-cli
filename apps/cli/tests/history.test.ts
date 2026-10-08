@@ -84,14 +84,12 @@ test('an attempt can be picked and copied, with the notice in its own language',
 
   const session = await openHistory(sandbox, env, t);
   await session.press(Key.DOWN, Key.DOWN, Key.ENTER);
-  const opened = await session.waitFor('Pick an attempt.');
-  assert.match(
-    opened,
-    / 1 {2}\d{4}-\d{2}-\d{2} \d{2}:\d{2} {2}Local · large-v3-turbo +Primer intento, peor\./,
-  );
-  assert.match(
-    opened,
-    /› {2}2 {2}\d{4}-\d{2}-\d{2} \d{2}:\d{2} {2}OpenAI · whisper-1 +\(saved\) {2}Hola, esto es lo que se dijo\./,
+  await session.waitFor('Pick an attempt.');
+  assert.ok(
+    await session.shows([
+      / 1 {2}\d{4}-\d{2}-\d{2} \d{2}:\d{2} {2}Local · large-v3-turbo +Primer intento, peor\./,
+      /› {2}2 {2}\d{4}-\d{2}-\d{2} \d{2}:\d{2} {2}OpenAI · whisper-1 +\(saved\) {2}Hola, esto es lo que se dijo\./,
+    ]),
   );
 
   await session.press(Key.UP);
@@ -148,11 +146,10 @@ test('a failed attempt changes nothing on disk and offers the engines again', as
   await session.waitFor('[Enter] transcribe');
   const mark = session.mark();
   await session.press(Key.ENTER);
-  const failed = await session.waitFor('Transcription failed. Pick an engine to try again.', {
-    from: mark,
-  });
-
-  assert.match(failed, /Invalid API key — run transcribe-cli -c to update it\./);
+  await session.waitFor('Transcription failed. Pick an engine to try again.', { from: mark });
+  assert.ok(
+    await session.shows([/Invalid API key — run transcribe-cli -c to update it\./], { from: mark }),
+  );
   const after = fs
     .readdirSync(path.dirname(older))
     .map((name) => [name, sandbox.read(path.join(path.dirname(older), name))]);
@@ -165,8 +162,8 @@ test('an audio never transcribed can be transcribed from the list', async (t) =>
 
   const session = await openHistory(sandbox, env, t);
   await session.press(Key.ENTER);
-  const opened = await session.waitFor('No transcript yet: press r to transcribe it.');
-  assert.match(opened, /No attempts yet\./);
+  await session.waitFor('No transcript yet: press r to transcribe it.');
+  assert.ok(await session.shows([/No attempts yet\./]));
   await session.press('r');
   await session.waitFor('[Enter] transcribe');
   await session.press(Key.ENTER);

@@ -28,12 +28,16 @@ test('a long audio shows what each engine would cost before sending, and q sends
 
   const session = startCli(sandbox, ['-f', audio], env);
   t.after(() => session.kill());
-  const screen = await session.waitFor('[Enter] transcribe · [e] change engine · [q] cancel');
+  await session.waitFor('[Enter] transcribe · [e] change engine · [q] cancel');
 
-  assert.match(screen, /Audio: +6m 00s/);
-  assert.match(screen, /› OpenAI +whisper-1 +~\$0\.04 +~18s \(guess\)/);
-  assert.match(screen, / {2}OpenAI +gpt-4o-transcribe-diarize +~\$0\.13 +~18s \(guess\)/);
-  assert.match(screen, / {2}Local +large-v3-turbo +free +~12m 00s \(guess\)/);
+  assert.ok(
+    await session.shows([
+      /Audio: +6m 00s/,
+      /› OpenAI +whisper-1 +~\$0\.04 +~18s \(guess\)/,
+      / {2}OpenAI +gpt-4o-transcribe-diarize +~\$0\.13 +~18s \(guess\)/,
+      / {2}Local +large-v3-turbo +free +~12m 00s \(guess\)/,
+    ]),
+  );
 
   await session.press('q');
   assert.equal(await session.exited, 0);
@@ -75,10 +79,14 @@ test('the estimate uses how fast this machine went before, model by model', asyn
 
   const session = startCli(sandbox, ['-f', audio], env);
   t.after(() => session.kill());
-  const screen = await session.waitFor('[Enter] transcribe');
+  await session.waitFor('[Enter] transcribe');
 
-  assert.match(screen, /› OpenAI +whisper-1 +~\$0\.04 +~1m 03s\r?\n/);
-  assert.match(screen, /gpt-4o-transcribe-diarize +~\$0\.13 +~54m 00s\r?\n/);
+  assert.ok(
+    await session.shows([
+      /› OpenAI +whisper-1 +~\$0\.04 +~1m 03s\r?\n/,
+      /gpt-4o-transcribe-diarize +~\$0\.13 +~54m 00s\r?\n/,
+    ]),
+  );
   await session.press('q');
   await session.exited;
 });
@@ -105,19 +113,23 @@ async function failingImport(
   const audio = makeTone(setup.sandbox.file('talk.wav'), 1);
   const session = startCli(setup.sandbox, ['-f', audio], { ...setup.env, ...env });
   t.after(() => session.kill());
-  const screen = await session.waitFor('Transcription failed. Pick an engine to try again.');
-  return { ...setup, session, screen };
+  await session.waitFor('Transcription failed. Pick an engine to try again.');
+  return { ...setup, session };
 }
 
 test('a rejected key says what to do, keeps the audio and leaves no transcript behind', async (t) => {
-  const { sandbox, session, screen } = await failingImport(
+  const { sandbox, session } = await failingImport(
     t,
     apiError(401, 'Incorrect API key provided: sk-test.'),
   );
 
-  assert.match(screen, /Invalid API key — run transcribe-cli -c to update it\./);
-  assert.doesNotMatch(screen, /401/);
-  assert.match(screen, /Audio saved at .*__talk\.wav/);
+  assert.ok(
+    await session.shows([
+      /Invalid API key — run transcribe-cli -c to update it\./,
+      /Audio saved at .*__talk\.wav/,
+    ]),
+  );
+  assert.doesNotMatch(session.text, /401/);
   assert.deepEqual(
     sandbox.transcripts('imported').map((file) => file.replace(/.*__/, '')),
     ['talk.wav'],
@@ -127,7 +139,7 @@ test('a rejected key says what to do, keeps the audio and leaves no transcript b
 });
 
 test('a quota failure is recognised from the status', async (t) => {
-  const { screen } = await failingImport(t, {
+  const { session } = await failingImport(t, {
     ...apiError(
       429,
       'You exceeded your current quota, please check your plan and billing details.',
@@ -135,32 +147,32 @@ test('a quota failure is recognised from the status', async (t) => {
     ),
     headers: { 'retry-after': '0' },
   });
-  assert.match(screen, /OpenAI quota exceeded — check your plan and billing\./);
+  assert.ok(await session.shows([/OpenAI quota exceeded — check your plan and billing\./]));
 });
 
 test('a quota failure is recognised from the message when the status says otherwise', async (t) => {
-  const { screen } = await failingImport(
+  const { session } = await failingImport(
     t,
     apiError(400, 'insufficient_quota for this organization'),
   );
-  assert.match(screen, /OpenAI quota exceeded — check your plan and billing\./);
+  assert.ok(await session.shows([/OpenAI quota exceeded — check your plan and billing\./]));
 });
 
 test('no connection suggests retrying instead of showing the transport error', async (t) => {
-  const { screen } = await failingImport(
+  const { session } = await failingImport(
     t,
     { body: '' },
     { OPENAI_BASE_URL: 'http://127.0.0.1:9/v1' },
   );
-  assert.match(screen, /No connection — retry once you are back online\./);
+  assert.ok(await session.shows([/No connection — retry once you are back online\./]));
 });
 
 test('anything unrecognised keeps its own message', async (t) => {
-  const { screen } = await failingImport(
+  const { session } = await failingImport(
     t,
     apiError(400, 'Invalid file format. Supported formats: flac, mp3.'),
   );
-  assert.match(screen, /Invalid file format\. Supported formats: flac, mp3\./);
+  assert.ok(await session.shows([/Invalid file format\. Supported formats: flac, mp3\./]));
 });
 
 test('a diarized answer without segments is a failure, not an empty transcript', async (t) => {
@@ -169,8 +181,8 @@ test('a diarized answer without segments is a failure, not an empty transcript',
   const audio = makeTone(setup.sandbox.file('talk.wav'), 1);
   const session = startCli(setup.sandbox, ['-f', audio, '-s'], setup.env);
   t.after(() => session.kill());
-  const screen = await session.waitFor('Transcription failed.');
-  assert.match(screen, /Diarized response has no segments\./);
+  await session.waitFor('Transcription failed.');
+  assert.ok(await session.shows([/Diarized response has no segments\./]));
 });
 
 test('after a failure, Enter tries again with the same audio and saves the result', async (t) => {
@@ -200,8 +212,8 @@ test('a file that is not there, or is a folder, is named instead of failing to s
   for (const target of [sandbox.file('missing.wav'), sandbox.root]) {
     const session = startCli(sandbox, ['-f', target], env);
     t.after(() => session.kill());
-    const screen = await session.waitFor('Could not prepare the file.');
-    assert.match(screen.replaceAll(/\s+/g, ' '), new RegExp(`File not found: ${target}`));
+    await session.waitFor('Could not prepare the file.');
+    assert.ok(await session.shows([new RegExp(`File not found: ${target}`)], { flat: true }));
     await session.press('q');
     assert.equal(await session.exited, 0);
   }
@@ -214,11 +226,11 @@ test('a format that needs converting, without ffmpeg, says how to install it', a
 
   const session = startCli(sandbox, ['-f', aiff], env);
   t.after(() => session.kill());
-  const screen = (await session.waitFor('Could not prepare the file.')).replaceAll(/\s+/g, ' ');
+  await session.waitFor('Could not prepare the file.');
 
-  assert.match(
-    screen,
+  await session.waitFor(
     /\.aiff has to be converted first\. ffmpeg is required to: convert imported audio the api will not take, and anything over 25 mb\. Install it with: sudo apt install ffmpeg Or point at an existing one: TRANSCRIBE_FFMPEG_PATH=\/path\/to\/ffmpeg/,
+    { flat: true },
   );
   await session.press('q');
   await session.exited;

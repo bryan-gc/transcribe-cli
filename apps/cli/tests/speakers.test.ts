@@ -148,9 +148,13 @@ test('in a terminal each voice can be heard and named, and s saves the names', a
 
   const session = startCli(sandbox, ['speakers', text]);
   t.after(() => session.kill());
-  const screen = await session.waitFor('Who is speaking? (2 voices)');
-  assert.match(screen, /▸ A {2}2 turns · 0m 25s/);
-  assert.match(screen, / {2}B {2}2 turns · 0m 04s {2}"Agreed, ship it\." {2}\(no clean clip\)/);
+  await session.waitFor('Who is speaking? (2 voices)');
+  assert.ok(
+    await session.shows([
+      /▸ A {2}2 turns · 0m 25s/,
+      / {2}B {2}2 turns · 0m 04s {2}"Agreed, ship it\." {2}\(no clean clip\)/,
+    ]),
+  );
 
   await session.send('p');
   await until(() => sandbox.callArgs('play') !== undefined, 'the clip is played');

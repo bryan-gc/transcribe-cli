@@ -240,10 +240,10 @@ test('a piece that keeps failing keeps the finished ones, and a retry continues 
 
   const session = startCli(sandbox, ['-f', audio, '-y'], env);
   t.after(() => session.kill());
-  const failure = await session.waitFor('Pick an engine to try again.', { deadlineMs: 60_000 });
-  assert.match(
-    failure.replaceAll(/\s+/g, ' '),
+  await session.waitFor('Pick an engine to try again.', { deadlineMs: 60_000 });
+  await session.waitFor(
     /Part 2 of 3 failed: 400 Still broken\.\. The finished parts are kept; retry to continue from part 2\./,
+    { flat: true },
   );
   assert.equal(api.requests.length, 4);
   const firstPiece = api.requests[0]!.file!.content;

@@ -115,20 +115,24 @@ export class TerminalSession {
 
   waitFor(
     expected: string | RegExp,
-    options: { from?: number; deadlineMs?: number } = {},
+    options: { from?: number; deadlineMs?: number; flat?: boolean } = {},
   ): Promise<string> {
     const from = options.from ?? 0;
-    const matches = () => {
+    const view = () => {
       const seen = this.text.slice(from);
+      return options.flat ? seen.replaceAll(/\s+/g, ' ') : seen;
+    };
+    const matches = () => {
+      const seen = view();
       return typeof expected === 'string' ? seen.includes(expected) : expected.test(seen);
     };
-    if (matches()) return Promise.resolve(this.text.slice(from));
+    if (matches()) return Promise.resolve(view());
     return new Promise((resolve, reject) => {
       const check = () => {
         if (!matches()) return;
         this.listeners.delete(check);
         clearTimeout(timer);
-        resolve(this.text.slice(from));
+        resolve(view());
       };
       const timer = setTimeout(() => {
         this.listeners.delete(check);
@@ -140,6 +144,14 @@ export class TerminalSession {
       }, options.deadlineMs ?? DEFAULT_DEADLINE_MS);
       this.listeners.add(check);
     });
+  }
+
+  async shows(
+    patterns: RegExp[],
+    options: { from?: number; flat?: boolean } = {},
+  ): Promise<boolean> {
+    for (const pattern of patterns) await this.waitFor(pattern, options);
+    return true;
   }
 
   async press(...keys: string[]): Promise<void> {

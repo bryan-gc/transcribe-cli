@@ -119,12 +119,16 @@ exit 1`;
 
   const session = startCli(sandbox, ['-f', audio], env);
   t.after(() => session.kill());
-  const screen = (await session.waitFor('Transcription failed.')).replaceAll(/\s+/g, ' ');
-  assert.match(
-    screen,
-    /WhisperX exited with code 1: Traceback \(most recent call last\): RuntimeError: CUDA failed with error out of memory Audio saved/,
+  await session.waitFor('Transcription failed.');
+  assert.ok(
+    await session.shows(
+      [
+        /WhisperX exited with code 1: Traceback \(most recent call last\): RuntimeError: CUDA failed with error out of memory Audio saved/,
+      ],
+      { flat: true },
+    ),
   );
-  assert.doesNotMatch(screen, /Lightning automatically|warnings\.warn/);
+  assert.doesNotMatch(session.text, /Lightning automatically|warnings\.warn/);
   await session.press('q');
   await session.exited;
 
@@ -146,11 +150,15 @@ test('asking the local engine for speakers fails instead of silently dropping th
 
   const session = startCli(sandbox, ['-f', audio, '--speakers'], env);
   t.after(() => session.kill());
-  const screen = (await session.waitFor('Transcription failed.')).replaceAll(/\s+/g, ' ');
+  await session.waitFor('Transcription failed.');
 
-  assert.match(
-    screen,
-    /Speaker labels are not available from the local engine yet\. Drop --local to use the API, or drop --speakers\./,
+  assert.ok(
+    await session.shows(
+      [
+        /Speaker labels are not available from the local engine yet\. Drop --local to use the API, or drop --speakers\./,
+      ],
+      { flat: true },
+    ),
   );
   assert.equal(sandbox.callArgs('whisperx'), undefined);
 });
@@ -162,9 +170,9 @@ test('whisperx that ends without writing a transcription is a failure, not an em
 
   const session = startCli(sandbox, ['-f', audio], env);
   t.after(() => session.kill());
-  const screen = await session.waitFor('Transcription failed.');
+  await session.waitFor('Transcription failed.');
 
-  assert.match(screen, /WhisperX finished without writing a transcription\./);
+  assert.ok(await session.shows([/WhisperX finished without writing a transcription\./]));
 });
 
 test('the mock switch wins over the configured engine', async (t) => {

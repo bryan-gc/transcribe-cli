@@ -24,10 +24,14 @@ test('by default it records at once, and Enter stops, transcribes, saves and cop
 
   const session = startCli(sandbox, [], env);
   t.after(() => session.kill());
-  const recording = await session.waitFor(/🔴 Recording {3}0:0\d/);
-  assert.match(recording, /Microphone: Default Device/);
-  assert.match(recording, /Clipboard: {2}On\r?\n/);
-  assert.match(recording, /\[space\] pause · \[Enter\] stop and transcribe/);
+  await session.waitFor(/🔴 Recording {3}0:0\d/);
+  assert.ok(
+    await session.shows([
+      /Microphone: Default Device/,
+      /Clipboard: {2}On\r?\n/,
+      /\[space\] pause · \[Enter\] stop and transcribe/,
+    ]),
+  );
   await session.press(Key.ENTER);
   await session.waitFor('Transcription done — copied to clipboard.');
   assert.equal(await session.exited, 0);
@@ -51,10 +55,10 @@ test('the first connected microphone of the priority list wins, through PipeWire
 
   const session = startCli(sandbox, [], env);
   t.after(() => session.kill());
-  const screen = await session.waitFor(
+  await session.waitFor(
     /🔴 Recording.*with Built-in Audio Analog Stereo \(preferred mic not connected\)/,
   );
-  assert.match(screen, /Microphone: Built-in Audio Analog Stereo/);
+  assert.ok(await session.shows([/Microphone: Built-in Audio Analog Stereo/]));
   await until(() => sandbox.callArgs('arecord') !== undefined, 'arecord starts');
 
   const args = sandbox.callArgs('arecord')!.split('\n');
@@ -181,11 +185,12 @@ test('a microphone that produced nothing says so instead of sending silence', as
   t.after(() => session.kill());
   await session.waitFor('🔴 Recording');
   await session.press(Key.ENTER);
-  const screen = await session.waitFor('Nothing was recorded.');
+  await session.waitFor('Nothing was recorded.');
 
-  assert.match(
-    screen,
-    /The microphone produced no audio\. Check it with transcribe-cli --manual\./,
+  assert.ok(
+    await session.shows([
+      /The microphone produced no audio\. Check it with transcribe-cli --manual\./,
+    ]),
   );
   assert.equal(api.requests.length, 0);
   await session.press('q');
@@ -203,9 +208,13 @@ test('a failed recording transcription can be sent again without recording again
   t.after(() => session.kill());
   await session.waitFor('🔴 Recording');
   await session.press(Key.ENTER);
-  const failed = await session.waitFor('Transcription failed. Pick an engine to try again.');
-  assert.match(failed, /Invalid API key — run transcribe-cli -c to update it\./);
-  assert.match(failed, /Audio saved at .*transcriptions\/recorded\//);
+  await session.waitFor('Transcription failed. Pick an engine to try again.');
+  assert.ok(
+    await session.shows([
+      /Invalid API key — run transcribe-cli -c to update it\./,
+      /Audio saved at .*transcriptions\/recorded\//,
+    ]),
+  );
   const mark = session.mark();
   await session.press(Key.ENTER);
   await session.waitFor('Transcription completed and saved.', { from: mark });
@@ -222,11 +231,12 @@ test('without arecord the recording stops with what to install', async (t) => {
   t.after(() => session.kill());
   await session.waitFor('🔴 Recording');
   await session.press(Key.ENTER);
-  const screen = await session.waitFor('Nothing was recorded.');
+  await session.waitFor('Nothing was recorded.');
 
-  assert.match(
-    screen,
-    /arecord is not installed\. Run transcribe-cli doctor to see what is missing\./,
+  assert.ok(
+    await session.shows([
+      /arecord is not installed\. Run transcribe-cli doctor to see what is missing\./,
+    ]),
   );
   assert.equal(api.requests.length, 0);
 });
