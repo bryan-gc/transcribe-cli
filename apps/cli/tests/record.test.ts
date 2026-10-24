@@ -105,6 +105,31 @@ test('with none of the list connected it falls back to the default and says so; 
   assert.doesNotMatch(screen, /preferred mic not connected/);
 });
 
+test('a microphone that drops from the list for a moment does not restart the recording', async (t) => {
+  const { sandbox, env } = await harness(t, {
+    config: { microphonePriority: [RAZER.id] },
+  });
+  const { tone } = fakeMicrophone(sandbox, { pipewire: [RAZER] });
+
+  const session = startCli(sandbox, [], env);
+  t.after(() => session.kill());
+  await session.waitFor(/🔴 Recording {3}0:01/);
+  await until(() => sandbox.callArgs('arecord') !== undefined, 'arecord starts');
+  const firstPid = sandbox.read(`${sandbox.logDir}/arecord.pid`);
+
+  sandbox.write('pw-dump.json', '[]');
+  const mark = session.mark();
+  await session.waitFor(/🔴 Recording {3}0:03/, { from: mark });
+  await session.press(Key.ENTER);
+  await session.waitFor('Transcription completed and saved.');
+
+  assert.equal(sandbox.read(`${sandbox.logDir}/arecord.pid`), firstPid);
+  assert.match(sandbox.callArgs('arecord')!, new RegExp(`PULSE_SOURCE=${RAZER.id}`));
+  const recordings = sandbox.transcripts('recorded').filter((file) => file.endsWith('.wav'));
+  assert.equal(recordings.length, 1);
+  assert.deepEqual(fs.readFileSync(recordings[0]!), fs.readFileSync(tone));
+});
+
 test('without PipeWire the ALSA devices are read from arecord, and the label comes from the device', async (t) => {
   const { sandbox, env } = await harness(t, {
     config: { microphonePriority: ['plughw:CARD=PCH,DEV=0'] },

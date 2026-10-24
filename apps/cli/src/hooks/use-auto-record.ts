@@ -66,8 +66,8 @@ export function useAutoRecord(
   const speedOfRef = useRef(measuredSpeed(readRecentMeta(appConfig.basePath)));
 
   const activeLanguage = appConfig.selectedLanguage;
-  const { device: activeMic, isFallback: micIsFallback } = resolveMicDevice(
-    appConfig.microphonePriority,
+  const [{ device: activeMic, isFallback: micIsFallback }] = useState(() =>
+    resolveMicDevice(appConfig.microphonePriority),
   );
 
   const activeGlossary = glossary;
