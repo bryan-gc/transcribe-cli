@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -49,4 +50,11 @@ export function audioSeconds(file: string): number {
     { encoding: 'utf8' },
   );
   return Number.parseFloat(out.trim());
+}
+
+export function assertSameAudio(actual: Buffer, expected: Buffer): void {
+  assert.ok(
+    actual.equals(expected),
+    `the audio differs: ${actual.length} bytes, expected ${expected.length}`,
+  );
 }

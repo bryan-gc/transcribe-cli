@@ -24,6 +24,7 @@ export class AudioRecorder {
   private _isPaused: boolean = false;
   private startupError: Error | null = null;
   private pendingPause: ReturnType<typeof setTimeout> | null = null;
+  onMicrophoneLost: (() => void) | null = null;
 
   setDevice(device: string): void {
     if (this.cp) {
@@ -45,7 +46,36 @@ export class AudioRecorder {
     this.fileStream = fs.createWriteStream(filepath, { encoding: Encoding.BINARY });
     this._isPaused = false;
     this.startupError = null;
+    this.capture(AUDIO_CONFIG.TYPE);
+  }
 
+  reconnect(): void {
+    if (this.cp || !this.fileStream) return;
+    this.capture(AUDIO_CONFIG.TYPE_RAW);
+  }
+
+  private capture(type: string): void {
+    const { command, args, env } = this.captureCommand(type);
+    const child = spawn(command, args, {
+      stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.IGNORE],
+      env,
+    });
+    this.cp = child;
+    this.watchStartup(command);
+    if (this.fileStream) child.stdout?.pipe(this.fileStream, { end: false });
+    child.on(ProcessEvent.CLOSE, () => {
+      if (this.cp !== child) return;
+      this.cp = null;
+      this._isPaused = false;
+      this.onMicrophoneLost?.();
+    });
+  }
+
+  private captureCommand(type: string): {
+    command: string;
+    args: string[];
+    env: NodeJS.ProcessEnv;
+  } {
     let env = process.env;
 
     if (os.platform() === Platform.DARWIN) {
@@ -61,19 +91,13 @@ export class AudioRecorder {
         '-b',
         AUDIO_CONFIG.BITS,
         '-t',
-        AUDIO_CONFIG.TYPE,
+        type,
         '-',
       ];
       if (this.device !== DEFAULT_DEVICE_ID) {
         env = { ...process.env, AUDIODEV: this.device };
       }
-      this.cp = spawn(Cmd.SOX, args, {
-        stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.IGNORE],
-        env,
-      });
-      this.watchStartup(Cmd.SOX);
-      this.cp.stdout?.pipe(this.fileStream);
-      return;
+      return { command: Cmd.SOX, args, env };
     }
 
     // Linux (arecord)
@@ -86,7 +110,7 @@ export class AudioRecorder {
       '-r',
       AUDIO_CONFIG.SAMPLE_RATE,
       '-t',
-      AUDIO_CONFIG.TYPE,
+      type,
     ];
 
     if (this.device !== DEFAULT_DEVICE_ID) {
@@ -96,15 +120,13 @@ export class AudioRecorder {
         this.device.startsWith(ALSA_PREFIXES.ALSA_INPUT) ||
         this.device.startsWith(ALSA_PREFIXES.BLUEZ_INPUT);
       args.push('-D', isPulse ? AUDIO_CONFIG.DEVICE_PULSE : this.device);
-      if (isPulse) env = { ...process.env, PULSE_SOURCE: this.device };
+      if (isPulse) {
+        env = { ...process.env, PULSE_SOURCE: this.device };
+        if (this.onMicrophoneLost) env.PULSE_PROP = AUDIO_CONFIG.PULSE_NO_RECONNECT;
+      }
     }
 
-    this.cp = spawn(Cmd.ARECORD, args, {
-      stdio: [StdioOption.IGNORE, StdioOption.PIPE, StdioOption.IGNORE],
-      env,
-    });
-    this.watchStartup(Cmd.ARECORD);
-    this.cp.stdout?.pipe(this.fileStream);
+    return { command: Cmd.ARECORD, args, env };
   }
 
   private watchStartup(command: string): void {
@@ -147,40 +169,43 @@ export class AudioRecorder {
       this.pendingPause = null;
     }
     return new Promise((resolve) => {
-      if (!this.cp) {
+      if (!this.cp && !this.fileStream) {
         resolve();
         return;
       }
 
       // If the process was paused, we MUST resume it first so it can process
       // the SIGINT/SIGTERM and flush any remaining buffer.
-      if (this._isPaused) {
+      if (this.cp && this._isPaused) {
         this.cp.kill(Signal.SIGCONT);
         this._isPaused = false;
       }
 
       // Wait a brief moment to capture the trailing audio from the hardware buffer
       setTimeout(() => {
-        if (this.cp) {
+        const child = this.cp;
+        this.cp = null;
+        const stream = this.fileStream;
+        this.fileStream = null;
+
+        if (child) {
           // Attempt a graceful exit first (SIGINT) so wav headers and buffers can be flushed
-          this.cp.kill(Signal.SIGINT);
+          child.kill(Signal.SIGINT);
 
           // Safety fallback to SIGTERM if it doesn't exit
-          const fallback = setTimeout(() => {
-            if (this.cp) this.cp.kill(Signal.SIGTERM);
-          }, 500);
+          const fallback = setTimeout(() => child.kill(Signal.SIGTERM), 500);
 
-          this.cp.on(ProcessEvent.EXIT, () => clearTimeout(fallback));
-          this.cp = null;
+          child.on(ProcessEvent.CLOSE, () => {
+            clearTimeout(fallback);
+            stream?.end();
+          });
         }
+        if (!child) stream?.end();
 
-        if (!this.fileStream) {
+        if (!stream) {
           resolve();
           return;
         }
-
-        const stream = this.fileStream;
-        this.fileStream = null;
 
         let resolved = false;
         const done = () => {

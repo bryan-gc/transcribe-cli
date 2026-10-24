@@ -24,6 +24,7 @@ import {
   type EngineChoice,
 } from '../utils/estimate.js';
 import { buildPreflight, type Preflight } from '../utils/preflight.js';
+import { playAlertSound } from '../system/alert-sound.js';
 import { audioDurationSeconds } from '../audio/audio-duration.js';
 import { measuredSpeed, readRecentMeta } from '../utils/history.js';
 import { Engine } from '../config/config-manager.js';
@@ -51,6 +52,7 @@ export function useAutoRecord(
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [stalledAfterResume, setStalledAfterResume] = useState(false);
+  const [microphoneLost, setMicrophoneLost] = useState(false);
   const [retryMenu, setRetryMenu] = useState<Preflight | null>(null);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
@@ -90,11 +92,19 @@ export function useAutoRecord(
     setCurrentDiarizedPath(p.diarizedPath);
     setCurrentMetaPath(p.metaPath);
 
+    const clock = new RecordingClock();
+    clockRef.current = clock;
+    recorder.onMicrophoneLost = () => {
+      clock.pause();
+      setIsPaused(true);
+      setStalledAfterResume(false);
+      setMicrophoneLost(true);
+      playAlertSound();
+    };
+
     recorder.start(p.audioPath);
     setIsRecording(true);
 
-    const clock = new RecordingClock();
-    clockRef.current = clock;
     const timer = setInterval(() => setElapsedSeconds(clock.tick()), RECORDING_TICK_MS);
     timerRef.current = timer;
 
@@ -114,6 +124,14 @@ export function useAutoRecord(
   const togglePause = () => {
     const recorder = recorderRef.current;
     if (!recorder || !isRecording || isTranscribing) return;
+
+    if (microphoneLost) {
+      setMicrophoneLost(false);
+      setIsPaused(false);
+      clockRef.current.resume();
+      recorder.reconnect();
+      return;
+    }
 
     if (!isPaused) {
       recorder.pause();
@@ -229,6 +247,7 @@ export function useAutoRecord(
     stopClock();
     setIsRecording(false);
     setIsPaused(false);
+    setMicrophoneLost(false);
     setIsTranscribing(true);
     setStatusText('⏹️  Stopped recording. Saving file...');
 
@@ -257,6 +276,7 @@ export function useAutoRecord(
       statusText: isRecording ? recordingLine() : statusText,
       isRecording,
       isPaused,
+      microphoneLost,
       elapsedSeconds,
       isTranscribing,
       transcriptionResult,

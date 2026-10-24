@@ -13,16 +13,20 @@ export function fakeMicrophone(sandbox: Sandbox, options: MicOptions = {}) {
   const tone = makeTone(sandbox.file('mic.wav'), 3);
   const header = sandbox.write('header.wav', fs.readFileSync(tone).subarray(0, 44));
   const alsaList = sandbox.write('alsa.txt', options.alsa ?? '');
+  const audio = options.audio === 'header-only' ? header : tone;
+  const unplugged = sandbox.file('unplugged');
   sandbox.stub(
     'arecord',
     [
       `if [ "$1" = "-L" ]; then cat '${alsaList}'; exit 0; fi`,
+      `if [ -f '${unplugged}' ]; then exit 1; fi`,
       `printf '%s\\n' "$@" > '${sandbox.logDir}/arecord.args'`,
       `printf 'PULSE_SOURCE=%s\\n' "$PULSE_SOURCE" >> '${sandbox.logDir}/arecord.args'`,
+      `printf 'PULSE_PROP=%s\\n' "$PULSE_PROP" > '${sandbox.logDir}/arecord.env'`,
       `echo $$ > '${sandbox.logDir}/arecord.pid'`,
-      `cat '${options.audio === 'header-only' ? header : tone}'`,
+      `case " $* " in *" raw "*) tail -c +45 '${audio}' ;; *) cat '${audio}' ;; esac`,
       "trap 'exit 0' INT TERM",
-      'while true; do sleep 0.1; done',
+      `while true; do [ -f '${unplugged}' ] && exit 1; sleep 0.1; done`,
     ].join('\n'),
   );
   if (options.pipewire) {
@@ -51,7 +55,11 @@ export function fakeMicrophone(sandbox: Sandbox, options: MicOptions = {}) {
     const dump = sandbox.write('pw-dump.json', JSON.stringify(nodes));
     sandbox.stub('pw-dump', `cat '${dump}'`);
   }
-  return { tone };
+  return {
+    tone,
+    unplug: () => sandbox.write('unplugged', ''),
+    plugBack: () => fs.rmSync(unplugged),
+  };
 }
 
 export function processState(sandbox: Sandbox): string {

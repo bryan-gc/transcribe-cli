@@ -107,9 +107,11 @@ export const AUDIO_CONFIG = {
   CHANNELS: '1',
   BITS: '16',
   TYPE: 'wav',
+  TYPE_RAW: 'raw',
   ENCODING_SOX: 'signed-integer',
   FORMAT_ARECORD: 'S16_LE',
   DEVICE_PULSE: 'pulse',
+  PULSE_NO_RECONNECT: 'node.dont-reconnect=true',
 } as const;
 
 export const ALSA_PREFIXES = {

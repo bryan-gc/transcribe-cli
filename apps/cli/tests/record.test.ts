@@ -5,6 +5,7 @@ import { Key, startCli, until } from './support/cli.js';
 import { apiError, srtBody } from './support/openai-stub.js';
 import { harness } from './support/setup.js';
 import { fakeMicrophone, processState } from './support/microphone.js';
+import { assertSameAudio } from './support/audio.js';
 
 const RAZER = {
   id: 'alsa_input.usb-Razer_Seiren_V2_Pro-00.analog-stereo',
@@ -41,8 +42,8 @@ test('by default it records at once, and Enter stops, transcribes, saves and cop
     ['-q', '-f', 'S16_LE', '-c', '1', '-r', '16000', '-t', 'wav', 'PULSE_SOURCE='].join('\n'),
   );
   const audio = sandbox.transcriptFile('recorded', '.wav');
-  assert.deepEqual(fs.readFileSync(audio), fs.readFileSync(tone));
-  assert.deepEqual(api.requests[0]!.file!.content, fs.readFileSync(tone));
+  assertSameAudio(fs.readFileSync(audio), fs.readFileSync(tone));
+  assertSameAudio(api.requests[0]!.file!.content, fs.readFileSync(tone));
   assert.equal(sandbox.meta('recorded').source, 'recorded');
   assert.equal(sandbox.clipboard(), 'Hello from the stub.');
 });
@@ -127,7 +128,67 @@ test('a microphone that drops from the list for a moment does not restart the re
   assert.match(sandbox.callArgs('arecord')!, new RegExp(`PULSE_SOURCE=${RAZER.id}`));
   const recordings = sandbox.transcripts('recorded').filter((file) => file.endsWith('.wav'));
   assert.equal(recordings.length, 1);
-  assert.deepEqual(fs.readFileSync(recordings[0]!), fs.readFileSync(tone));
+  assertSameAudio(fs.readFileSync(recordings[0]!), fs.readFileSync(tone));
+});
+
+test('a microphone that disconnects pauses the recording with an alert, and resumes into the same file once it is back', async (t) => {
+  const { sandbox, env } = await harness(t, {
+    config: { microphonePriority: [RAZER.id] },
+  });
+  const { tone, unplug, plugBack } = fakeMicrophone(sandbox, { pipewire: [RAZER] });
+  sandbox.stub('play', `printf '%s\\n' "$@" > '${sandbox.logDir}/play.args'`);
+
+  const session = startCli(sandbox, [], env);
+  t.after(() => session.kill());
+  await session.waitFor(/🔴 Recording {3}0:01/);
+  assert.equal(
+    sandbox.read(`${sandbox.logDir}/arecord.env`).trim(),
+    'PULSE_PROP=node.dont-reconnect=true',
+  );
+
+  unplug();
+  const alert = await session.waitFor(/MICROPHONE DISCONNECTED — RECORDING PAUSED[\s\S]*\[Enter\]/);
+  assert.match(alert, /⏸ {2}Paused/);
+  assert.match(alert, /Razer Seiren V2 Pro stopped sending audio/);
+  await until(() => sandbox.callArgs('play') !== undefined, 'the alert sound plays');
+
+  const stillUnplugged = session.mark();
+  await session.press(Key.SPACE);
+  await session.waitFor('MICROPHONE DISCONNECTED', { from: stillUnplugged });
+
+  plugBack();
+  const pluggedBack = session.mark();
+  await session.press(Key.SPACE);
+  await session.waitFor(/🔴 Recording/, { from: pluggedBack });
+  await until(() => sandbox.callArgs('arecord')!.includes('raw'), 'it records again');
+  await session.press(Key.ENTER);
+  await session.waitFor('Transcription completed and saved.');
+
+  const recordings = sandbox.transcripts('recorded').filter((file) => file.endsWith('.wav'));
+  assert.equal(recordings.length, 1);
+  assertSameAudio(
+    fs.readFileSync(recordings[0]!),
+    Buffer.concat([fs.readFileSync(tone), fs.readFileSync(tone).subarray(44)]),
+  );
+});
+
+test('closing the terminal while the microphone is disconnected keeps what was recorded', async (t) => {
+  const { sandbox, env } = await harness(t, {
+    config: { microphonePriority: [RAZER.id] },
+  });
+  const { tone, unplug } = fakeMicrophone(sandbox, { pipewire: [RAZER] });
+
+  const session = startCli(sandbox, [], env);
+  t.after(() => session.kill());
+  await session.waitFor(/🔴 Recording {3}0:01/);
+  unplug();
+  await session.waitFor('MICROPHONE DISCONNECTED');
+  session.kill();
+  await session.exited;
+
+  const recordings = sandbox.transcripts('recorded').filter((file) => file.endsWith('.wav'));
+  assert.equal(recordings.length, 1);
+  assertSameAudio(fs.readFileSync(recordings[0]!), fs.readFileSync(tone));
 });
 
 test('without PipeWire the ALSA devices are read from arecord, and the label comes from the device', async (t) => {

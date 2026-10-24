@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCli } from './support/cli.js';
-import { makeTone } from './support/audio.js';
+import { assertSameAudio, makeTone } from './support/audio.js';
 import { diarizedBody, srtBody } from './support/openai-stub.js';
 import { glossary, harness } from './support/setup.js';
 
@@ -25,11 +25,11 @@ test('an imported file goes to whisper-1 as srt, and the archive keeps audio, su
   assert.equal(api.field(0, 'language'), 'en');
   assert.equal(api.field(0, 'prompt'), undefined, 'the general glossary only has its header');
   assert.match(request.file!.name, /__talk\.wav$/);
-  assert.deepEqual(request.file!.content, fs.readFileSync(audio));
+  assertSameAudio(request.file!.content, fs.readFileSync(audio));
 
   assert.ok(fs.existsSync(audio), 'the original stays where it was');
   const archived = sandbox.transcriptFile('imported', '.wav');
-  assert.deepEqual(fs.readFileSync(archived), fs.readFileSync(audio));
+  assertSameAudio(fs.readFileSync(archived), fs.readFileSync(audio));
   assert.match(sandbox.read(sandbox.transcriptFile('imported', '.srt')), /Good morning\./);
   assert.equal(
     sandbox.read(sandbox.transcriptFile('imported', '.txt')),

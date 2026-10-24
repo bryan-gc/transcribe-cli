@@ -5,7 +5,8 @@ import { Header } from './header.js';
 import { PreflightPrompt } from './preflight-prompt.js';
 import { useAutoRecord } from '../hooks/use-auto-record.js';
 import type { AppConfig } from '../config/config-manager.js';
-import { ActionHotkey, HOTKEY_EXIT } from '../constants.js';
+import { ActionHotkey, HOTKEY_EXIT, HOTKEY_PAUSE_LABEL } from '../constants.js';
+import { formatClock } from '../utils/recording-clock.js';
 import {
   clipboardField,
   engineField,
@@ -35,6 +36,8 @@ export function AutoRecordApp({
     statusText,
     isRecording,
     isPaused,
+    microphoneLost,
+    elapsedSeconds,
     isTranscribing,
     transcriptionResult,
     failure,
@@ -86,6 +89,24 @@ export function AutoRecordApp({
           ...asideField(aside),
         ]}
       />
+
+      {isRecording && microphoneLost && (
+        <Box flexDirection="column" marginTop={1} paddingX={2} paddingY={1} backgroundColor="red">
+          <Text bold color="white">
+            ⚠️ MICROPHONE DISCONNECTED — RECORDING PAUSED
+          </Text>
+          <Text color="white">
+            {activeMic.label} stopped sending audio. Nothing you say now is being recorded.
+          </Text>
+          <Text color="white">
+            Everything up to {formatClock(elapsedSeconds)} is saved in {currentAudioPath}
+          </Text>
+          <Text bold color="white">
+            Reconnect it and press [{HOTKEY_PAUSE_LABEL}] to keep recording into the same file, or
+            [Enter] to transcribe what was recorded.
+          </Text>
+        </Box>
+      )}
 
       {failure !== null && (
         <Box flexDirection="column" marginTop={1}>

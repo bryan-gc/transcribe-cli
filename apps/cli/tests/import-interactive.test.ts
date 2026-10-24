@@ -2,7 +2,7 @@ import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { Key, runCli, startCli } from './support/cli.js';
-import { makeAudio, makeTone } from './support/audio.js';
+import { assertSameAudio, makeAudio, makeTone } from './support/audio.js';
 import { apiError, diarizedBody } from './support/openai-stub.js';
 import { harness } from './support/setup.js';
 
@@ -202,7 +202,7 @@ test('after a failure, Enter tries again with the same audio and saves the resul
   assert.equal(await session.exited, 0);
 
   assert.equal(api.requests.length, 2);
-  assert.deepEqual(api.requests[1]!.file!.content, api.requests[0]!.file!.content);
+  assertSameAudio(api.requests[1]!.file!.content, api.requests[0]!.file!.content);
   assert.equal(sandbox.transcripts('imported').filter((file) => file.endsWith('.wav')).length, 1);
   assert.equal(sandbox.read(sandbox.transcriptFile('imported', '.txt')), 'Second time lucky.');
 });
