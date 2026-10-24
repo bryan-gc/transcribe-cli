@@ -38,6 +38,7 @@ import { backfillMeta, transcriptsWithoutMeta } from './utils/backfill-meta.js';
 import { HistoryApp } from './components/history-app.js';
 import { createInterface } from 'readline/promises';
 import { AVAILABLE_LANGUAGES, Cmd, DIR } from './constants.js';
+import { checkForUpdate } from './system/update-check.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +75,8 @@ program
   .option('--no-wrap', 'Copy the bare text, without the automatic-transcription notice')
   .option('-y, --yes', 'Skip the cost confirmation shown for long audio files')
   .parse(process.argv);
+
+checkForUpdate(pkg.version, __filename);
 
 const config = ConfigManager.load();
 

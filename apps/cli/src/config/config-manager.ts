@@ -45,7 +45,7 @@ export const ENV_OVERRIDES = {
   WHISPERX_PATH: 'TRANSCRIBE_WHISPERX_PATH',
 } as const;
 
-const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
+export const CONFIG_DIR = path.join(os.homedir(), '.transcribe-cli');
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 
 export const DEFAULT_CONFIG: AppConfig = {

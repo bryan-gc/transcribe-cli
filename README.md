@@ -56,6 +56,9 @@ brew install sox
 npm install -g @bryan-gc/transcribe-cli
 ```
 
+When a newer version is out, the CLI says so when it starts, with the update command for the package
+manager it was installed with.
+
 ## First Run & Configuration
 
 On the first launch, an interactive prompt will ask you for:

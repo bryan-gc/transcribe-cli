@@ -21,8 +21,8 @@ export interface RunOptions {
   deadlineMs?: number;
 }
 
-function nodeArgs(args: string[]): string[] {
-  return ['--import', 'tsx', ENTRY, ...args];
+function nodeArgs(args: string[], entry = ENTRY): string[] {
+  return ['--import', 'tsx', entry, ...args];
 }
 
 export function runCli(
@@ -78,9 +78,14 @@ export class TerminalSession {
   private readonly listeners = new Set<() => void>();
   private readonly closed: Promise<number>;
 
-  constructor(sandbox: Sandbox, args: string[], env: Record<string, string | undefined> = {}) {
+  constructor(
+    sandbox: Sandbox,
+    args: string[],
+    env: Record<string, string | undefined> = {},
+    entry = ENTRY,
+  ) {
     const appEnv = sandbox.env(env);
-    const command = [process.execPath, ...nodeArgs(args)].map(shellQuote).join(' ');
+    const command = [process.execPath, ...nodeArgs(args, entry)].map(shellQuote).join(' ');
     const shell = `stty cols 160 rows 60; PATH=${shellQuote(appEnv.PATH ?? '')} exec ${command}`;
     this.child = spawn('script', ['-qfec', shell, '/dev/null'], {
       cwd: APP_DIR,
@@ -247,8 +252,18 @@ export function startCli(
   sandbox: Sandbox,
   args: string[],
   env: Record<string, string | undefined> = {},
+  entry = ENTRY,
 ): TerminalSession {
-  return new TerminalSession(sandbox, args, env);
+  return new TerminalSession(sandbox, args, env, entry);
+}
+
+export function installGlobally(sandbox: Sandbox, prefix: string): string {
+  const target = sandbox.file(prefix, 'node_modules', '@bryan-gc', 'transcribe-cli');
+  fs.mkdirSync(target, { recursive: true });
+  fs.cpSync(path.join(APP_DIR, 'src'), path.join(target, 'src'), { recursive: true });
+  fs.copyFileSync(path.join(APP_DIR, 'package.json'), path.join(target, 'package.json'));
+  fs.symlinkSync(path.join(APP_DIR, 'node_modules'), path.join(target, 'node_modules'));
+  return path.join(target, 'src', 'index.tsx');
 }
 
 export async function until(
