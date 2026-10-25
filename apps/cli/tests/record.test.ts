@@ -154,7 +154,10 @@ test('a microphone that disconnects pauses the recording with an alert, and resu
 
   const stillUnplugged = session.mark();
   await session.press(Key.SPACE);
-  await session.waitFor('MICROPHONE DISCONNECTED', { from: stillUnplugged });
+  await session.waitFor('Still no audio from it (attempt 1).', { from: stillUnplugged });
+  const again = session.mark();
+  await session.press(Key.SPACE);
+  await session.waitFor('Still no audio from it (attempt 2).', { from: again });
 
   plugBack();
   const pluggedBack = session.mark();

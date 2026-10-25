@@ -24,7 +24,7 @@ export class AudioRecorder {
   private _isPaused: boolean = false;
   private startupError: Error | null = null;
   private pendingPause: ReturnType<typeof setTimeout> | null = null;
-  onMicrophoneLost: (() => void) | null = null;
+  onMicrophoneLost: ((capturedAudio: boolean) => void) | null = null;
 
   setDevice(device: string): void {
     if (this.cp) {
@@ -62,12 +62,14 @@ export class AudioRecorder {
     });
     this.cp = child;
     this.watchStartup(command);
+    let capturedAudio = false;
+    child.stdout?.once(StreamEvent.DATA, () => (capturedAudio = true));
     if (this.fileStream) child.stdout?.pipe(this.fileStream, { end: false });
     child.on(ProcessEvent.CLOSE, () => {
       if (this.cp !== child) return;
       this.cp = null;
       this._isPaused = false;
-      this.onMicrophoneLost?.();
+      this.onMicrophoneLost?.(capturedAudio);
     });
   }
 

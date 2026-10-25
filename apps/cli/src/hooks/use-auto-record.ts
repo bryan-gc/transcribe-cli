@@ -53,6 +53,7 @@ export function useAutoRecord(
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [stalledAfterResume, setStalledAfterResume] = useState(false);
   const [microphoneLost, setMicrophoneLost] = useState(false);
+  const [failedReconnects, setFailedReconnects] = useState(0);
   const [retryMenu, setRetryMenu] = useState<Preflight | null>(null);
 
   const [currentAudioPath, setCurrentAudioPath] = useState('');
@@ -64,6 +65,7 @@ export function useAutoRecord(
   const recorderRef = useRef<AudioRecorder | null>(null);
   const transcriberRef = useRef<ITranscriber | null>(null);
   const clockRef = useRef(new RecordingClock());
+  const reconnectingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const speedOfRef = useRef(measuredSpeed(readRecentMeta(appConfig.basePath)));
 
@@ -94,7 +96,10 @@ export function useAutoRecord(
 
     const clock = new RecordingClock();
     clockRef.current = clock;
-    recorder.onMicrophoneLost = () => {
+    recorder.onMicrophoneLost = (capturedAudio) => {
+      const reconnectFailed = reconnectingRef.current && !capturedAudio;
+      reconnectingRef.current = false;
+      setFailedReconnects((count) => (reconnectFailed ? count + 1 : 0));
       clock.pause();
       setIsPaused(true);
       setStalledAfterResume(false);
@@ -126,6 +131,7 @@ export function useAutoRecord(
     if (!recorder || !isRecording || isTranscribing) return;
 
     if (microphoneLost) {
+      reconnectingRef.current = true;
       setMicrophoneLost(false);
       setIsPaused(false);
       clockRef.current.resume();
@@ -277,6 +283,7 @@ export function useAutoRecord(
       isRecording,
       isPaused,
       microphoneLost,
+      failedReconnects,
       elapsedSeconds,
       isTranscribing,
       transcriptionResult,

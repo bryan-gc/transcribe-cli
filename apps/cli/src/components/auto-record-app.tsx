@@ -37,6 +37,7 @@ export function AutoRecordApp({
     isRecording,
     isPaused,
     microphoneLost,
+    failedReconnects,
     elapsedSeconds,
     isTranscribing,
     transcriptionResult,
@@ -101,6 +102,12 @@ export function AutoRecordApp({
           <Text color="white">
             Everything up to {formatClock(elapsedSeconds)} is saved in {currentAudioPath}
           </Text>
+          {failedReconnects > 0 && (
+            <Text bold color="white">
+              Still no audio from it (attempt {failedReconnects}). Check that it is on and
+              connected.
+            </Text>
+          )}
           <Text bold color="white">
             Reconnect it and press [{HOTKEY_PAUSE_LABEL}] to keep recording into the same file, or
             [Enter] to transcribe what was recorded.

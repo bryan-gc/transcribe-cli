@@ -131,6 +131,7 @@ export enum ProcessEvent {
 }
 
 export enum StreamEvent {
+  DATA = 'data',
   FINISH = 'finish',
   CLOSE = 'close',
   ERROR = 'error',
